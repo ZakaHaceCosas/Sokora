@@ -29,8 +29,12 @@ Where:
 You must use this with everything, even with Git features. When doing a merge commit, update its message to be like so:
 
 ```bash
-[merge] #91 by @user
+[merge] #91 from user/repo:branch by @user
+
+(HERE: SPEC COMPLIAN DESCRIPTION OF CHANGES)
 ```
+
+Similarly, other features like `[rebase]` or `[revert]` get their commits in this format.
 
 Supported commit types are:
 

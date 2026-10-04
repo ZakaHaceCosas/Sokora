@@ -1,4 +1,4 @@
-import type { Mention, Mentionable } from "./types";
+import type { Mention, Mentionable } from "types";
 
 /**
  * Handles role mentions, channel mentions, timestamps, and more.
@@ -47,11 +47,12 @@ export function mention(who: string | number, type: Mentionable): string {
 export function unmention(mnt: string): undefined | Mention {
   const out = /<(#|@|@&|t:)(\d+)(:D|:d|:S)?>/.exec(mnt);
 
-  if (!out) return undefined;
-  return {
-    type: ({ "#": "CHANNEL", "@": "USER", "@&": "ROLE", "t:": "TIMESTAMP" } as const)[
-      out[1]
-    ] as "USER",
-    res: out[2],
-  };
+  return out
+    ? {
+        type: ({ "#": "CHANNEL", "@": "USER", "@&": "ROLE", "t:": "TIMESTAMP" } as const)[
+          out[1]
+        ] as "USER",
+        res: out[2],
+      }
+    : undefined;
 }

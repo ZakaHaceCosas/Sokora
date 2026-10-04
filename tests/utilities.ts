@@ -1,16 +1,16 @@
 import type { Guild, Message, OmitPartialGroupDMChannel, User } from "discord.js";
-import { as } from "utils/types";
+import { DEV_GUILD_ID, OWNER } from "const";
+import { as, type SafeMessage } from "types";
+import { safeMessage } from "utils/safeThings";
 
 export const mockGuild = as<Guild>({
   memberCount: 12 ** 2,
-  id: process.env.DEVELOPMENT_GUILD_ID,
+  id: DEV_GUILD_ID,
   name: "Kosora",
-  ownerId: "725985503177867295",
+  ownerId: OWNER,
   members: {
     cache: {
-      get: () => {
-        return mockUser();
-      },
+      get: () => mockUser(),
     },
   },
 });
@@ -27,7 +27,7 @@ export function mockUser(_config?: MockUserConfig): User {
   return as<User>({
     displayName: "John Sokora",
     username: "mrserge01",
-    id: process.env.OWNER,
+    id: OWNER,
     displayAvatarURL: () =>
       "https://kde.org/stuff/clipart/logo/kde-logo-white-gray-rounded-128x128.png",
     permissions: {
@@ -36,23 +36,20 @@ export function mockUser(_config?: MockUserConfig): User {
   });
 }
 
-export function generateMessage(
+export async function generateMessage(
   content: string,
   user?: MockUserConfig,
-): OmitPartialGroupDMChannel<Message> {
-  if (!process.env.DEVELOPMENT_GUILD_ID)
-    throw new Error(
-      "Cannot test without the bot being in a testing guild and said guild’s ID being provided.",
-    );
-
-  return as<OmitPartialGroupDMChannel<Message>>({
-    content,
-    partial: false,
-    guildId: process.env.DEVELOPMENT_GUILD_ID,
-    guild: mockGuild,
-    author: mockUser(user),
-    reply: async (): Promise<OmitPartialGroupDMChannel<Message>> => {
-      return {};
-    },
-  });
+): Promise<SafeMessage> {
+  return await safeMessage(
+    as<OmitPartialGroupDMChannel<Message>>({
+      content,
+      partial: false,
+      guildId: DEV_GUILD_ID,
+      guild: mockGuild,
+      author: mockUser(user),
+      reply: async (): Promise<OmitPartialGroupDMChannel<Message>> =>
+        as<Promise<OmitPartialGroupDMChannel<Message>>>({}),
+    }),
+    true,
+  );
 }

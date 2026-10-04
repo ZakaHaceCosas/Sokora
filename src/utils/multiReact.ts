@@ -8,8 +8,8 @@ import { safeMember } from "./safeThings";
  */
 export async function multiReact(message: Message, ...emojis: string[]): Promise<void> {
   const guild = message.guild;
-  if (!guild) return;
-  if (!(await safeMember(guild, message.client.user.id)).permissions.has("AddReactions")) return;
+  if (!guild || !(await safeMember(guild, message.client.user.id)).permissions.has("AddReactions"))
+    return;
 
   for (const index of emojis) {
     if (typeof index == "object") {

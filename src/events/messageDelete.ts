@@ -7,21 +7,21 @@ import {
   MediaGalleryItemBuilder,
   TextDisplayBuilder,
 } from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
-import { client } from "src/bot";
+import { useErrorEmbed } from "embeds/errorEmbed";
+import { client } from "botfile";
 import { checkForS } from "utils/checkForS";
 import { colorize, Sokolors } from "utils/colorize";
 import { logChannel } from "utils/logChannel";
 import { fetchMedia } from "utils/media";
 import { mention } from "utils/mention";
-import type { Event } from "utils/types";
+import type { Event } from "types";
 
 export default (async function run(message) {
   try {
     if (message.partial) return;
     const author = message.author;
     if (!author)
-      return await errorEmbed({
+      return await useErrorEmbed({
         client,
         title: "Cannot log deleted message.",
         reason: `Message ${message} lacks an author.`,
@@ -30,7 +30,7 @@ export default (async function run(message) {
     if (author.bot) return;
     const guild = message.guild;
     if (!guild)
-      return await errorEmbed({
+      return await useErrorEmbed({
         client,
         title: "Cannot log deleted message.",
         reason: `Message ${message} lacks the guild.`,
@@ -42,7 +42,7 @@ export default (async function run(message) {
     try {
       media = await fetchMedia(message);
     } catch (error) {
-      return await errorEmbed({
+      return await useErrorEmbed({
         client,
         error,
         title: "Error fetching meta image.",
@@ -60,9 +60,9 @@ export default (async function run(message) {
         ),
         new TextDisplayBuilder().setContent(
           content.length <= 2048
-            ? (content && content.length > 0
+            ? content && content.length > 0
               ? content
-              : "*Empty message*")
+              : "*Empty message*"
             : "*The deleted message is an attachment below due to it being too large.*",
         ),
       )
@@ -97,6 +97,6 @@ export default (async function run(message) {
       flags: "IsComponentsV2",
     });
   } catch (error) {
-    return await errorEmbed({ client, error, log: true, forward: true, fileName: "messageDelete" });
+    return await useErrorEmbed({ client, error, fileName: "messageDelete" });
   }
 } as Event<"messageDelete">);

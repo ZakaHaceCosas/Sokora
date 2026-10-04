@@ -8,7 +8,7 @@ import {
   type ButtonInteraction,
   type ChatInputCommandInteraction,
 } from "discord.js";
-import { buttonCheck } from "embeds/errorEmbed";
+import { isButtonErrory } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { COLLECTOR_DURATION } from "utils/constants";
 import { replace } from "utils/replace";
@@ -34,7 +34,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
         new TextDisplayBuilder().setContent(
           isPastView
             ? [
-                "**Developers** • itsakuro, Kalze, Littie, Mart *(+ translator lead)*, Pigpot, Spectrum, Sungi *(+ translator)*, **ThyTonyStank *(the reason Sokora exists!)***, underscored *(+ tester)*, Zayaan AR",
+                "**Developers** • itsakuro, Kalze, Meqr, Littie, Mart *(+ translator lead)*, Pigpot, Spectrum, Sungi *(+ translator)*, **ThyTonyStank *(the reason Sokora exists!)***, underscored *(+ tester)*, Zayaan AR",
                 "**Designers** • ArtyH, pibayar, proJM, Slider_on_the_black",
                 "**Translators** • SaFire",
                 "**Testers** • astol",
@@ -44,7 +44,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
               ].join("\n")
             : [
                 "**Founder** • Goos",
-                "**Developers** • Froxcey, Golem64 *(+ translator)*, Meqr, Nikkerudon *(+ translator)*, ZakaHaceCosas *(+ designer, social relations, translator)*",
+                "**Developers** • Froxcey, Golem64 *(+ translator)*, Nikkerudon *(+ translator)*, ZakaHaceCosas *(+ designer, social relations, translator)*",
                 "**Designers** • Pjanda, trvhz",
                 "**Social relations** • Spoon",
                 "**Translators** • Dimkauzh, GraczNet, TrulyBlue",
@@ -73,7 +73,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
 
   const collector = reply.createMessageComponentCollector({ time: COLLECTOR_DURATION });
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
-    if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
+    if (await isButtonErrory({ i: buttonInteraction, interaction, reply })) return;
 
     const cID = buttonInteraction.customId;
     if (cID == "please") return;

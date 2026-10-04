@@ -10,7 +10,7 @@ import {
   type ChatInputCommandInteraction,
   type ClientUser,
 } from "discord.js";
-import { buttonCheck } from "embeds/errorEmbed";
+import { isButtonErrory } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { COLLECTOR_DURATION } from "utils/constants";
 import { replace } from "utils/replace";
@@ -43,8 +43,8 @@ async function genChangelog(
     )
     .addActionRowComponents(
       new ActionRowBuilder<ButtonBuilder>().addComponents(
-        ...Object.keys(changelog.body).map(v =>
-          new ButtonBuilder()
+        ...Object.keys(changelog.body).map(v => {
+          return new ButtonBuilder()
             .setLabel(v)
             .setCustomId(`${v}+${changelog.ver}`)
             .setStyle(
@@ -55,20 +55,20 @@ async function genChangelog(
                 Changed: ButtonStyle.Secondary,
               }[v as Label],
             )
-            .setDisabled(v === viewing),
-        ),
+            .setDisabled(v === viewing);
+        }),
       ),
     )
     .addSeparatorComponents(new SeparatorBuilder().setDivider(true))
     .addActionRowComponents(
       new ActionRowBuilder<ButtonBuilder>().addComponents(
-        ...list.map(v =>
-          new ButtonBuilder()
+        ...list.map(v => {
+          return new ButtonBuilder()
             .setLabel(v.ver)
             .setCustomId(v.ver)
             .setStyle(v.isMinor ? ButtonStyle.Primary : ButtonStyle.Secondary)
-            .setDisabled(v.ver === changelog.ver),
-        ),
+            .setDisabled(v.ver === changelog.ver);
+        }),
       ),
     )
     .addTextDisplayComponents(
@@ -106,7 +106,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
   });
   const collector = reply.createMessageComponentCollector({ time: COLLECTOR_DURATION });
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
-    if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
+    if (await isButtonErrory({ i: buttonInteraction, interaction, reply })) return;
     collector.resetTimer({ time: COLLECTOR_DURATION });
 
     const cID = buttonInteraction.customId;

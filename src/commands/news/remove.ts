@@ -12,25 +12,23 @@ import {
 import { errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { safeChannel, safeMember } from "utils/safeThings";
-import { isInteractionSafe } from "utils/types";
+import { assertInteraction } from "types";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("remove")
   .setDescription("Removes a news post.")
-  .addNumberOption(number =>
-    number
+  .addNumberOption(number => {
+    return number
       .setName("id")
       .setDescription("The ID of the news post. (found in the footer)")
-      .setRequired(true),
-  );
+      .setRequired(true);
+  });
 
 export async function run(
   interaction: ChatInputCommandInteraction,
 ): Promise<Message | InteractionResponse | undefined> {
-  if (
-    !isInteractionSafe(interaction) ||
-    !(await safeMember(interaction.guild, interaction.user.id)).permissions.has("ManageGuild")
-  )
+  assertInteraction(interaction);
+  if (!(await safeMember(interaction.guild, interaction.user.id)).permissions.has("ManageGuild"))
     return await errorEmbed({
       interaction,
       title: "You can’t execute this command.",
@@ -55,7 +53,7 @@ export async function run(
     (await getSetting(interaction.guild.id, "news", "channel")) ?? interaction.channel.id,
   )) as TextChannel;
 
-  if (newsChannel && news.messageID) await newsChannel.messages.delete(news.messageID);
+  if (newsChannel && news.message_id) await newsChannel.messages.delete(news.message_id);
   await deleteNews(interaction.guild.id, id);
   await interaction.reply({
     components: [

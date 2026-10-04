@@ -15,8 +15,8 @@
     "ql": "prettier --w .; tsc --noEmit; eslint . --fix --no-warn-ignored"
   },
   "dependencies": {
-    "@hokkiai/djs-level-importer": "^1.2.0",
-    "@top-gg/sdk": "^3.1.6",
+    "@subetedesu/honlvlimport": "npm:@jsr/subetedesu__honlvlimport@^2.0.0",
+    "@top-gg/sdk": "^4.0.0",
     "chart.js": "^4.5.1",
     "chartjs-node-canvas": "^5.0.0",
     "colorthief": "^3.5.0",
@@ -24,7 +24,7 @@
     "enhanced-ms": "^5.0.0",
     "git-diff": "^2.0.7",
     "mathjs": "^15.2.0",
-    "p-limit": "^7.3.2",
+    "p-limit": "^7.3.3",
     "sharp": "^0.35.4"
   },
   "devDependencies": {
@@ -33,9 +33,9 @@
     "@typescript-eslint/eslint-plugin": "^8.70.0",
     "@typescript-eslint/parser": "^8.70.0",
     "bun-types": "^1.4.2",
-    "eslint": "^10.10.0",
-    "eslint-plugin-unicorn": "^72.0.0",
-    "prettier": "^3.9.6",
+    "eslint": "^10.11.0",
+    "eslint-plugin-unicorn": "^76.0.0",
+    "prettier": "^3.9.8",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.70.0"
   }

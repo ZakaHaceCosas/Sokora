@@ -6,7 +6,7 @@ import {
   setSetting,
   settingsDefinition,
 } from "database/settings";
-import type { SettingKeyFor, SettingReturnType } from "database/types";
+import type { SettingKeyFor, SettingReturnType } from "types";
 import {
   type ChatInputCommandInteraction,
   type Guild,
@@ -24,7 +24,7 @@ import { colorize, Sokolors } from "utils/colorize";
 import { logChannel } from "utils/logChannel";
 import { mention } from "utils/mention";
 import { safeMember } from "utils/safeThings";
-import { isInteractionSafe } from "utils/types";
+import { assertInteraction } from "types";
 
 export const data = new SlashCommandBuilder()
   .setName("settings")
@@ -118,16 +118,13 @@ async function setSettingPlease<K extends keyof TS, S extends SettingKeyFor<K>>(
 }
 
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
-  if (!isInteractionSafe(interaction))
-    throw new Error("Why is guild null if you are setting a server-table setting?");
+  assertInteraction(interaction);
 
   const key = interaction.options.getSubcommand() as keyof TS;
   await settingsEmbed(interaction, key, {
     setSettingPlease: async (key, setting, value) => {
       await setSettingPlease(interaction, key, setting, value);
     },
-    getSettingPlease: async (key, setting) => {
-      return await getSetting(interaction.guild.id, key, setting);
-    },
+    getSettingPlease: async (key, setting) => await getSetting(interaction.guild.id, key, setting),
   });
 }

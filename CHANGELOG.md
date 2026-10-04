@@ -7,17 +7,22 @@
 
 ### Added
 
-- Revamped the settings system's internals, added object-type settings and updated the settings pane (and gave it a proper name, "Peak Settings Editor"). See `/help settings` for info.
-- Importing levelling data from MEE6, Tatsu, and Lurkr. See `/help import` for info.
 - Level rewards, you can grant roles and/or channels as a reward for reaching a certain XP level.
+- Importing levelling data from MEE6, Tatsu, Amari and Lurkr. See `/help import` for info.
+- Revamped settings system's internals, added object-type settings and updated the settings pane (and gave it a proper name, "Peak Settings Editor"). See `/help settings` for info.
+- “Interkora”, a text-based programmatic interface to Sokora that allows interacting with it from webhooks, other bots or with bulkable text commands.
 - Error reporting. Error embeds now have a Report button that triggers an in-app form to report bugs very easily.
 - Upload one image to your news. (Cannot edit or remove images, nor add images from the edit modal.)
 - Pinging users and roles, linking channels and adding custom timestamps to news. Discord doesn’t allow this from the modal editor, so it uses a Dynamic Variables-ish syntax (Dynamic Mentions). See `/help variables` for info.
 - Removing a user’s messages when banning them. Use `/moderation ban user:@USER del:true` for this.
 - Functional `/changelog` command (view all version logs directly from the bot).
-- Settings changes logging.
-- Added two new easter eggs, `slash` and `test`.
-- Added a public testing build (Sokora Canary).
+- Logging for changed settings, enable it from `/settings moderation`.
+- New `/permcheck` command, checks for Sokora’s permission in your server to see if it’s missing something.
+  - Give it a channel and it’ll verify said channel’s permission overrides aren’t messing with it.
+  - Give it a user and it’ll check if it can moderate it.
+- Two new easter eggs, `slash` and `test`.
+- One new game, `hotpotato`.
+- A public testing build (Sokora Canary).
 
 ### Changed
 
@@ -40,6 +45,10 @@
 - Reset button in `/settings` now appears when you change a text/integer setting.
 - "News" are now "News posts", and instead of "adding" news you now "post" news.
 - Colors from the profile picture not working reliably (especially when the picture’s dominant color is grayscale.)
+- Issues with rendering custom emojis (like arrows in some buttons).
+- “Humanized” settings not always being actually humanized.
+- Wrong pluralization of negative numbers (-1 car instead of -1 cars, e.g.).
+- RPS using wrong name when playing with a bot
 
 ## 0.3.3 - 07/07/2026
 

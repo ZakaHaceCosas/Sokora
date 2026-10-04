@@ -1,4 +1,4 @@
-import type { SingleSettingDefinition } from "database/types";
+import type { SingleSettingDefinition } from "types";
 import { capitalize } from "./capitalize";
 
 /**

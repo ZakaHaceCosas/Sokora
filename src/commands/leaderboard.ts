@@ -5,10 +5,8 @@ import {
   TextDisplayBuilder,
   type ButtonInteraction,
   type ChatInputCommandInteraction,
-  type InteractionResponse,
-  type Message,
 } from "discord.js";
-import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
+import { isButtonErrory, useErrorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { COLLECTOR_DURATION } from "utils/constants";
 import { handlePages, pagedButtons } from "utils/pagination";
@@ -20,25 +18,25 @@ export const data = new SlashCommandBuilder()
   .addNumberOption(option => option.setName("page").setDescription("Page number to display."))
   .setContexts(0);
 
-export async function run(
-  interaction: ChatInputCommandInteraction,
-): Promise<Message | InteractionResponse | undefined> {
+export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   const guild = interaction.guild;
   const guildID = guild?.id;
   if (!guildID)
-    return await errorEmbed({ interaction, title: "This command can only be used in a server." });
+    return await useErrorEmbed({
+      interaction,
+      title: "This command can only be used in a server.",
+    });
 
   const leaderboardData = await getGuildLeaderboard(guildID);
-  if (leaderboardData.length === 0)
-    return await errorEmbed({
+  if (leaderboardData.length === 0) {
+    return await useErrorEmbed({
       interaction,
       title: "No data found.",
       reason: "There is no leveling data for this server yet.",
     });
+  }
 
-  leaderboardData.sort((a, b) => {
-    return b.level == a.level ? b.xp - a.xp : b.level - a.level;
-  });
+  leaderboardData.sort((a, b) => (b.level == a.level ? b.xp - a.xp : b.level - a.level));
 
   const usersPerPage = 10;
   const pages = Math.ceil(leaderboardData.length / usersPerPage);
@@ -54,7 +52,7 @@ export async function run(
 
     for (const [index, userData] of pageData.entries())
       content.push(
-        `**#${start + index + 1}** • ${(await safeUser(interaction.client, userData.userID)).tag} • Level **${Math.floor(userData.level)}** @ **${Math.floor(userData.xp)}** XP`,
+        `**#${start + index + 1}** • ${(await safeUser(interaction.client, userData.user_id)).tag} • Level **${Math.floor(userData.level)}** @ **${Math.floor(userData.xp)}** XP`,
       );
 
     container.addTextDisplayComponents(new TextDisplayBuilder().setContent(content.join("\n")));
@@ -70,7 +68,7 @@ export async function run(
   if (pages <= 1) return;
   const collector = reply.createMessageComponentCollector({ time: COLLECTOR_DURATION });
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
-    if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
+    if (await isButtonErrory({ i: buttonInteraction, interaction, reply })) return;
     collector.resetTimer({ time: COLLECTOR_DURATION });
     if (buttonInteraction.customId == "please") return;
 

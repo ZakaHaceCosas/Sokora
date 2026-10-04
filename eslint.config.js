@@ -44,6 +44,7 @@ export default defineConfig(
       "@typescript-eslint/await-thenable": "error",
       "@typescript-eslint/explicit-function-return-type": "warn",
       "@typescript-eslint/no-explicit-any": "error",
+      "unicorn/consistent-arrow-return-style": "error",
       "@typescript-eslint/consistent-type-imports": [
         "error",
         {
@@ -51,9 +52,13 @@ export default defineConfig(
         },
       ],
       "unicorn/no-null": "off",
+      "unicorn/prefer-combined-guards": "error",
+      "unicorn/no-unused-builtin-method-return": "error",
+      "unicorn/prefer-iterator-zip": "error",
       "@typescript-eslint/no-unnecessary-condition": "off",
       "unicorn/no-process-exit": "warn",
       "unicorn/filename-case": "off",
+      "unicorn/iteration-fallback-style": ["error", "guard"],
       "unicorn/no-await-expression-member": "off",
       "@typescript-eslint/restrict-template-expressions": "off",
       "unicorn/prefer-module": "error",
@@ -89,6 +94,10 @@ export default defineConfig(
       "no-self-compare": "error",
       "no-unmodified-loop-condition": "error",
       "no-unreachable-loop": "error",
+      "@typescript-eslint/no-confusing-void-expression": "off",
+      "unicorn/single-line-block-comment-style": "off",
+      "unicorn/iteration-fallback-style": ["error", "guard"],
+      "unicorn/consistent-arrow-return-style": "error",
       "@typescript-eslint/no-loop-func": "error",
       "@typescript-eslint/no-this-alias": "error",
       "@typescript-eslint/no-import-type-side-effects": "error",
@@ -110,6 +119,9 @@ export default defineConfig(
         },
       ],
       "unicorn/import-style": "error",
+      // TODO: Temporal, disable when done with MVC-ing
+      "unicorn/no-nested-ternary": "off",
+      curly: "off",
     },
   },
 );

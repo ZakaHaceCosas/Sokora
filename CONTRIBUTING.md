@@ -85,6 +85,8 @@ Some things you should keep in mind at all times.
   - Get a user (`safeUser`)
   - Get a guild (`safeGuild`)
   - Get a channel to send important bot messages to (`safeAlertChannel`)
+- If responding to a comment by someone with another comment (TODO: write this well)
+  - Team members are encouraged to reflect their discussions in comments. Future 3rd party contributors don’t have our chats, so any knowledge about specific code should be present in the codebase.
 
 Below, other things you should keep in mind when you’re carrying specific tasks.
 
@@ -94,6 +96,11 @@ Below, other things you should keep in mind when you’re carrying specific task
 - _I’m finding a way for all of settingsEmbed.ts to be PROPERLY typed._
   - Choose a mansion you’d like us to buy for you.
   - For reference, due to the guy building our type system assuming TypeScript is a better language than it actually is (see PR #91), we’ve hit some TypeScript limitations that make it very hard to convey what we’re doing to the compiler without it erroring out. This section of CONTRIBUTING.md was created because we were actually going to tolerate getting `settingsEmbed.ts` (one of the most important files of the bot!) to production with a truckload of TypeErrors. By now this has been resolved, but using bad practices and type casts everywhere. Anyone who achieves proper typing for this is an absolute hero and will probably be rewarded in some sort of way.
+- _I’m using a reusable container._
+  - If consuming an existing one, watch out for regular containers and build/use containers.
+    - Containers that only export xEmbed(), like `userEmbed`, are build functions. They take input and produce output (`ContainerBuilder`).
+    - Functions that export useXEmbed() and don’t exportbuildXEmbed(), like `useErrorEmbed`, are use functions. They take input, USE IT, and produce output of varying types (or none at all).
+    - YADA YADA TODO: write this better
 
 ### Coding guidelines
 
@@ -120,8 +127,12 @@ extended description]
 
 Please refer to [the Subete commit guidelines](./docs/subecommits.md).
 
----
+### Change merging guildelines
 
-Be sure to open a pull request when you’re ready to push your changes. Be descriptive of the changes you’ve made.
+Be sure to open a pull request when you’re ready to push your changes. If you happen to have write access to our repo, remember to:
 
 ![PLEASE SUBMIT A PR, NO DIRECT COMMITS](https://user-images.githubusercontent.com/51555391/176925763-cdfd57ba-ae1e-4bf3-85e9-b3ebd30b1d59.png)
+
+Keep the description as short as you can, but not shorter. Pull requests should explain in detail WHAT they do and WHY. The “how” is usually irrelevant, your code should be self-explanatory (if it’s not, then it’s likely wrong).
+
+If a pull request is large in scope OR if it contains “redundant” commits (such as to fix linter issues with the PR), it should be squashed into a single commit upon merge.

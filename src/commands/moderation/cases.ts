@@ -5,7 +5,7 @@ import {
   type Case,
   type ModType,
 } from "database/moderation";
-import type { TypeOfDefinition } from "database/types";
+import type { TypeOfDefinition } from "types";
 import {
   ContainerBuilder,
   SlashCommandSubcommandBuilder,
@@ -17,7 +17,7 @@ import {
   type Message,
   type User,
 } from "discord.js";
-import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
+import { isButtonErrory, useErrorEmbed } from "embeds/errorEmbed";
 import ms from "enhanced-ms";
 import { capitalize } from "utils/capitalize";
 import { colorize, Sokolors } from "utils/colorize";
@@ -42,10 +42,14 @@ async function generateContainer(options: {
   const actionsEmojis: Record<ModType, string> = {
     WARN: "⚠️",
     MUTE: "🔇",
+    UNMUTE: "🔊",
     KICK: "📤",
     BAN: "🔨",
+    // TODO: better emoji for unban
     UNBAN: "🔓",
-    UNMUTE: "🔊",
+    LOCK: "🔒",
+    UNLOCK: "🔓",
+    SLOWDOWN: "⏳"
   };
 
   const nothingMessage = [
@@ -61,14 +65,14 @@ async function generateContainer(options: {
   let fields = await Promise.all(
     displayedCases.map(async c => {
       const value = [
-        `**Moderator**: ${(await safeUser(client, c.moderator)).username}`,
+        `**Moderator**: ${(await safeUser(client, c.moderator_id)).username}`,
         c.reason ? `**Reason**: ${c.reason}` : "*No reason provided*",
         `**Time of action**: ${mention(c.timestamp.valueOf(), "SIMPLE_TIMESTAMP")}`,
       ];
       let title = `**${actionsEmojis[c.type as ModType]} • ${capitalize(c.type.toLowerCase())} #${c.id}**`;
 
-      if (!user) title += ` • ${await safeUser(client, c.userID)}`;
-      if (c.expiresAt) value.push(`**Duration**: ${ms(Number(c.expiresAt), "fullPrecision")}`);
+      if (!user) title += ` • ${await safeUser(client, c.user_id)}`;
+      if (c.expires_at) value.push(`**Duration**: ${ms(Number(c.expires_at), "fullPrecision")}`);
 
       return new TextDisplayBuilder().setContent([title, value.join("\n")].join("\n"));
     }),
@@ -89,7 +93,7 @@ async function generateContainer(options: {
   const container = new ContainerBuilder()
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `## ${id ? capitalize(displayedCases[0].type?.toLowerCase()) : (type ? `${capitalize(type.toLowerCase())} cases` : pluralOrNot("Case", cases.length))} ${id ? `#${id}` : (user ? `of ${user.username}` : "in the server")}`,
+        `## ${id ? capitalize(displayedCases[0].type?.toLowerCase()) : type ? `${capitalize(type.toLowerCase())} cases` : pluralOrNot("Case", cases.length)} ${id ? `#${id}` : user ? `of ${user.username}` : "in the server"}`,
       ),
     )
     .setAccentColor(await colorize({ hue: Sokolors.Blue }));
@@ -118,8 +122,8 @@ export const data = new SlashCommandSubcommandBuilder()
   .addNumberOption(number =>
     number.setName("id").setDescription("The ID of a specific case that you want to see."),
   )
-  .addStringOption(string =>
-    string
+  .addStringOption(string => {
+    return string
       .setName("type")
       .setDescription("The specific type of action you’d like to see.")
       .setChoices(
@@ -147,8 +151,8 @@ export const data = new SlashCommandSubcommandBuilder()
           name: "Unmutes",
           value: "UNMUTE",
         },
-      ),
-  )
+      );
+  })
   .addNumberOption(option => option.setName("page").setDescription("Page number to display."));
 
 export async function run(
@@ -157,7 +161,7 @@ export async function run(
   const guild = interaction.guild;
   if (!guild) return;
   if (!(await safeMember(guild, interaction.user.id)).permissions.has("ModerateMembers"))
-    return await errorEmbed({
+    return await useErrorEmbed({
       interaction,
       title: "You can’t execute this command.",
       reason: "You need the **Moderate Members** permission.",
@@ -195,7 +199,7 @@ export async function run(
   if (pages <= 1) return;
   const collector = reply.createMessageComponentCollector({ time: COLLECTOR_DURATION });
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
-    if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
+    if (await isButtonErrory({ i: buttonInteraction, interaction, reply })) return;
     collector.resetTimer({ time: COLLECTOR_DURATION });
     if (buttonInteraction.customId == "please") return;
 

@@ -5,38 +5,43 @@ import { getSettingsTable, setSetting } from "database/settings";
 import {
   ActivityType,
   Client,
+  type ClientApplication,
   codeBlock,
   ContainerBuilder,
   Partials,
   TextDisplayBuilder,
 } from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
+import { useErrorEmbed } from "embeds/errorEmbed";
 import { registerGuildCommands } from "handlers/commands";
 import { loadEasterEggs, loadEvents } from "handlers/events";
 import fs from "node:fs";
 import pLimit from "p-limit";
 import { colorize, Sokolors } from "utils/colorize";
-import { MILLISEC_30M, MILLISEC_6H } from "utils/constants";
+import { IS_CANARY, MILLISEC_30M, MILLISEC_12H, TOKEN, TOPGG_TOKEN } from "const";
 import { mention } from "utils/mention";
 import { safeAlertChannel, safeUser } from "utils/safeThings";
-import type { GHCommit } from "utils/types";
+import type { GHCommit } from "types";
 import { rescheduleUnbans } from "utils/unbanScheduler";
-import { IS_CANARY } from "./canary";
+import { server } from "api/v1/http";
 
 export let client: Client;
 
-if (import.meta.main) {
-  const LOG_FILE = process.env.LIFECYCLE_LOG_PATH ?? "/app/logs/lifecycle.log";
-  const CANARY_MSG_BATCH_SIZE = 25;
+const LOG_FILE = "/app/logs/lifecycle.log";
+const CANARY_MSG_BATCH_SIZE = 25;
 
-  function appendLog(event: string): void {
-    try {
-      fs.appendFileSync(LOG_FILE, `${Date.now()}\t${event}\n`);
-    } catch (error) {
-      console.error(`something happened writing lifecycle log: ${error}`);
-    }
+function appendLog(event: string): void {
+  try {
+    fs.appendFileSync(LOG_FILE, `${Date.now()}\t${event}\n`);
+  } catch (error) {
+    console.error(`something happened writing lifecycle log: ${error}`);
   }
+}
 
+async function tailLog(): Promise<string[]> {
+  return (await Bun.$`tail -n 2 ${LOG_FILE}`.text()).split("\n");
+}
+
+if (import.meta.main) {
   process.on("SIGTERM", () => {
     appendLog("died to a sigterm");
     process.exit(0);
@@ -69,11 +74,23 @@ if (import.meta.main) {
     ],
   });
 
-  const topggHandler = async (): Promise<void> => {
-    if (!process.env.TOPGG_TOKEN)
-      throw new Error("No TOPGG_TOKEN but somehow top.gg handler got called.");
+  const topggCommandHandler = async (app: ClientApplication): Promise<void> => {
+    if (!TOPGG_TOKEN) throw new Error("No TOPGG_TOKEN but somehow top.gg handler got called.");
 
-    const topgg = new Api(process.env.TOPGG_TOKEN);
+    const topgg = new Api(TOPGG_TOKEN);
+    try {
+      const commands = (await app.commands.fetch()).map(command => command.toJSON());
+      await topgg.postCommands(commands);
+      console.log("Posted commands to top.gg!");
+    } catch (error) {
+      console.error(`Failed to start top.gg auto-poster: ${error}`);
+    }
+  };
+
+  const topggVoteHandler = async (): Promise<void> => {
+    if (!TOPGG_TOKEN) throw new Error("No TOPGG_TOKEN but somehow top.gg handler got called.");
+
+    const topgg = new Api(TOPGG_TOKEN);
     try {
       await topgg.postStats({ serverCount: (await client.guilds.fetch()).size });
       console.log("Posted statistics to top.gg!");
@@ -99,12 +116,10 @@ if (import.meta.main) {
           "Reminder that **you can vote for Sokora** on [top.gg](https://top.gg/bot/873918300726394960/vote) - go vote!!",
         );
       } catch (error) {
-        await errorEmbed({
+        await useErrorEmbed({
           client,
           error,
           title: "top.gg reminding error.",
-          log: true,
-          forward: true,
           fileName: "bot",
         });
         await setSetting(user, "topgg", "remind", false);
@@ -114,10 +129,8 @@ if (import.meta.main) {
   const yellAtEveryoneThatCanaryUpdated = async (): Promise<void> => {
     const user = client.user;
     // second to last log should be date of the second to last shutdown
-    const lastNLogLines = await Bun.$`tail -n 2 ${LOG_FILE}`.text();
-    const lastShutdown = new Date(
-      Number(lastNLogLines.split("\n", 1)[0].split("\t", 1)[0]) - MILLISEC_30M,
-    );
+    const lastNLogLines = await tailLog();
+    const lastShutdown = new Date(Number(lastNLogLines[0].split("\t", 1)[0]) - MILLISEC_30M);
     const response = await fetch(
       `https://api.github.com/repos/SokoraDesu/Sokora/commits?since=${lastShutdown.toISOString()}&until=${new Date().toISOString()}`,
       {
@@ -128,18 +141,22 @@ if (import.meta.main) {
       },
     );
     const _log = (await response.json()) as GHCommit[];
-    const log = _log.filter(c => !c.commit.message.startsWith("Merge pull request"));
+    const log = _log.filter(c => {
+      return (
+        !c.commit.message.startsWith("Merge pull request") &&
+        !c.commit.message.startsWith("[merge]")
+      );
+    });
     const hasTooManyCommits = log.length > 6;
     const dump = log
       .slice(0, 6)
-      .map(
-        c =>
-          `${c.commit.message
-            .trim()
-            .split("\n")
-            .map(s => `+ ${s}`)
-            .join("\n")}\n^ by ${c.commit.author?.name} in \`${c.sha.slice(0, 8)}\`\n`,
-      )
+      .map(c => {
+        return `${c.commit.message
+          .trim()
+          .split("\n")
+          .map(s => `+ ${s}`)
+          .join("\n")}\n^ by ${c.commit.author?.name} in \`${c.sha.slice(0, 8)}\`\n`;
+      })
       .join("\n");
 
     const timestamp = mention(lastShutdown.valueOf(), "DEFAULT_TIMESTAMP");
@@ -205,12 +222,18 @@ if (import.meta.main) {
   };
 
   client.once("clientReady", async () => {
-    if (process.env.TOPGG_TOKEN) setInterval(topggHandler, MILLISEC_6H);
+    if (!client.application) throw new Error("No client.application, somehow");
+
+    if (TOPGG_TOKEN) {
+      setInterval(topggVoteHandler, MILLISEC_12H);
+      await topggCommandHandler(client.application);
+    }
 
     // runs before yellAtEveryoneThatCanaryUpdated() to ensure the file exists
     appendLog("startup");
 
-    await updateDatabase(process.argv.includes("force-db-reset")); // Needs to be executed before anything else (since some things like rescheduleUnbans needs a DB in the first place)
+    // Needs to be executed before anything else (since some things like rescheduleUnbans needs a DB in the first place)
+    await updateDatabase(process.argv.includes("force-db-reset"));
     await Promise.all([
       loadEvents(client),
       loadEasterEggs(),
@@ -220,9 +243,7 @@ if (import.meta.main) {
       console.log(
         Math.random() < 0.002
           ? "こんにちは! (konichi whats upppppppp)"
-          : (IS_CANARY
-            ? "ちーっす Canary!"
-            : "ちーっす！"),
+          : `ちーっす${IS_CANARY ? " Canary!" : "!"} • Running as ${client.user?.id}`,
       );
     });
     if (IS_CANARY) await yellAtEveryoneThatCanaryUpdated();
@@ -234,5 +255,9 @@ if (import.meta.main) {
     Chart.register(...registerables);
   });
 
-  await client.login(process.env.TOKEN);
+  await client.login(TOKEN);
+
+  const runningServer = server(client);
+
+  console.log(runningServer.url.href);
 }

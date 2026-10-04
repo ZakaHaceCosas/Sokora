@@ -12,7 +12,7 @@ import { colorize, Sokolors } from "utils/colorize";
 import { logChannel } from "utils/logChannel";
 import { fetchMedia } from "utils/media";
 import { mention } from "utils/mention";
-import type { Event } from "utils/types";
+import type { Event } from "types";
 
 export default (async function run(oldMessage, newMessage) {
   try {

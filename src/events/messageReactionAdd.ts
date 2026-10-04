@@ -7,45 +7,45 @@ import {
   type Message,
   TextDisplayBuilder,
 } from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
-import { logEmbed } from "embeds/logEmbed";
+import { useErrorEmbed } from "embeds/errorEmbed";
+import { useLogEmbed } from "embeds/logEmbed";
 import { channelCheck, hasChannelPerms } from "utils/channelCheck";
 import { colorize, Sokolors } from "utils/colorize";
 import { mention } from "utils/mention";
 import { safeChannel, safeUser } from "utils/safeThings";
-import type { Event } from "utils/types";
+import type { Event } from "types";
+import { PotatoState } from "states";
+import ms from "enhanced-ms";
 
 export default (async function run(reaction, user) {
   const client = user.client;
   const guildID = reaction.message.guildId;
   const channelID = reaction.message.channelId;
   const errorExtras = {
-    guild: guildID,
-    channel: channelID,
-    message: reaction.message.id,
-    user: user.id,
+    guildId: guildID,
+    channelId: channelID,
+    messageId: reaction.message.id,
+    userId: user.id,
   };
 
-  if (!guildID || !(await getSetting(guildID, "starboard", "enabled"))) return;
+  if (!guildID || !reaction.message.guild || !(await getSetting(guildID, "starboard", "enabled")))
+    return;
 
   if (!hasChannelPerms(reaction.message.channel, "ReadMessageHistory"))
-    return logEmbed({
-      client,
-      guildID,
-      title: "Sokora is missing permissions",
-      description: `The channel <#${channelID}> does not allow Sokora to \`Read message history\`, starboard will not work in this channel until fixed`,
-    });
+    return useLogEmbed(
+      reaction.message.guild,
+      "Sokora is missing permissions",
+      `The channel <#${channelID}> does not allow Sokora to \`Read message history\`, starboard will not work in this channel until fixed`,
+    );
 
   if (reaction.partial)
     try {
       await reaction.fetch();
     } catch (error) {
-      return await errorEmbed({
+      return await useErrorEmbed({
         client,
         error,
         title: "Error fetching reaction.",
-        log: true,
-        forward: true,
         fileName: "messageReactionAdd",
         extras: errorExtras,
       });
@@ -55,12 +55,10 @@ export default (async function run(reaction, user) {
     try {
       await safeUser(client, user.id);
     } catch (error) {
-      await errorEmbed({
+      return await useErrorEmbed({
         client,
         error,
         title: "Error fetching user.",
-        log: true,
-        forward: true,
         fileName: "messageReactionAdd",
         extras: errorExtras,
       });
@@ -69,12 +67,10 @@ export default (async function run(reaction, user) {
   try {
     await reaction.message.fetch();
   } catch (error) {
-    await errorEmbed({
+    return await useErrorEmbed({
       client,
       error,
       title: "Error fetching message.",
-      log: true,
-      forward: true,
       fileName: "messageReactionAdd",
       extras: errorExtras,
     });
@@ -84,6 +80,32 @@ export default (async function run(reaction, user) {
   const { guild, author, content, createdAt, url, id, attachments } = message;
   if (!guild) return;
 
+  if (reaction.emoji.name == "🥔") {
+    const state = PotatoState.get(guild.id);
+    if (!state || author.id === state.heldBy || author.bot || message.webhookId) return;
+    const passTimeout = (Date.now() - state.lastPass) * 1000;
+    const setting = await getSetting(guild.id, "games", "hot_potato");
+    if (!setting || passTimeout < setting.pass_timeout) return;
+
+    const newState = PotatoState.update(guild.id, previous => {
+      return previous
+        ? {
+            ...previous,
+            passes: previous.passes + 1,
+            heldBy: author.id,
+            lastPass: Date.now(),
+          }
+        : previous;
+    });
+    if (!newState) return;
+    const remainingTime = ms(setting.burn_timeout * 1000 - (Date.now() - newState.started));
+    await message.reply(
+      `The hot potato **${newState.heldBy === state.startedBy ? "returns" : "now goes"} to ${mention(author.id, "USER")}**! **You have ${remainingTime} left to pass it to someone else** by reacting them with a 🥔!`,
+    );
+    return;
+  }
+
+  if (!(await getSetting(guild.id, "starboard", "enabled"))) return;
   const starEmoji = await getSetting(guild.id, "starboard", "emoji");
   if (reaction.emoji.name != starEmoji) return;
   if (!content && attachments.size === 0) return;
@@ -161,25 +183,23 @@ export default (async function run(reaction, user) {
       return;
     }
 
-    const starMessage = await starboardChannel.messages.fetch(existingStarred.star_message);
+    const starMessage = await starboardChannel.messages.fetch(existingStarred.star_message_id);
     if (starMessage.partial) await starMessage.fetch();
     await starMessage.edit({ components: containers, flags: "IsComponentsV2" });
     await setStarred(
       guild.id,
       id,
-      existingStarred.channel,
+      existingStarred.channel_id,
       author.id,
-      existingStarred.message,
+      existingStarred.message_id,
       starCount,
       new Date(message.createdTimestamp),
     );
   } catch (error) {
-    await errorEmbed({
+    return await useErrorEmbed({
       client,
       error,
       title: "Error handling starboard message.",
-      log: true,
-      forward: true,
       fileName: "messageReactionAdd",
       extras: errorExtras,
     });

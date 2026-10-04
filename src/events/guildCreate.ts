@@ -7,11 +7,11 @@ import {
 } from "discord.js";
 import { errorEmbed } from "embeds/errorEmbed";
 import { commands } from "handlers/commands";
-import { IS_CANARY } from "src/canary";
+import { IS_CANARY } from "const";
 import { colorize, Sokolors } from "utils/colorize";
 import { replace } from "utils/replace";
 import { safeAlertChannel } from "utils/safeThings";
-import type { Event } from "utils/types";
+import type { Event } from "types";
 
 export default (async function run(guild) {
   const client = guild.client;

@@ -1,4 +1,5 @@
 import type { Message } from "discord.js";
+import { ENABLE_MEDIA_FETCHING } from "const";
 
 /**
  * BEWARE.
@@ -27,7 +28,7 @@ export async function fetchMedia(
   let image = null;
   let video = null;
 
-  if (!url || !message.content || process.env.ENABLE_MEDIA_FETCHING != "true")
+  if (!url || !message.content || ENABLE_MEDIA_FETCHING != "true")
     return { image, video, thumbnail };
 
   const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(url);

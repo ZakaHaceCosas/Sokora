@@ -42,10 +42,7 @@ export async function logChannel(
 
   if (logChannel) {
     channel = await safeChannel(guild, logChannel)
-      .then((channel: Channel | null) => {
-        if (!channel?.isTextBased()) return null;
-        return channel as TextChannel;
-      })
+      .then((channel: Channel | null) => (channel?.isTextBased() ? (channel as TextChannel) : null))
       .catch(() => null);
 
     if (
@@ -68,8 +65,9 @@ export async function logChannel(
       if (!dmOptions || dmOptions.isSilent) return;
 
       channel = await dmOptions.user.createDM().catch(() => null);
-      if (!channel || !(await safeMember(guild, dmOptions.user.id)) || dmOptions.user.bot) return;
-      return await channel.send(dmOptions.options);
+      return !channel || !(await safeMember(guild, dmOptions.user.id)) || dmOptions.user.bot
+        ? undefined
+        : await channel.send(dmOptions.options);
     } catch (error) {
       return await errorEmbed({ client: guild.client, error, log: true });
     }

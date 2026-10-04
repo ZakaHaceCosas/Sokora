@@ -7,7 +7,7 @@ import {
   setUserXp,
 } from "database/leveling";
 import { getSetting } from "database/settings";
-import type { SettingReturnType } from "database/types";
+import type { SettingReturnType } from "types";
 import {
   ContainerBuilder,
   type Guild,
@@ -24,10 +24,11 @@ import { logEmbed } from "embeds/logEmbed";
 import { easterEggs } from "handlers/events";
 import { channelCheck, hasChannelPerms } from "utils/channelCheck";
 import { colorize, Sokolors } from "utils/colorize";
-import { interkora } from "utils/interkora";
 import { mention } from "utils/mention";
-import { safeChannel, safeMember, safeRole } from "utils/safeThings";
-import type { Event } from "utils/types";
+import { safeChannel, safeMember, safeMessage, safeRole } from "utils/safeThings";
+import { interkora } from "api/v1";
+import { assertMessage, type Event } from "types";
+import { buildMessageFromPayload, buildPayloadFromMessage } from "api/v1/message";
 
 const cooldowns = new Map<string, number>();
 
@@ -71,11 +72,15 @@ async function grantRewards(
     }
 }
 
-export default (async function run(message) {
+export default (async function run(_message) {
+  const message = await safeMessage(_message, false);
   const author = message.author;
+  const content = message.content;
 
-  if (message.content.startsWith("s!")) {
-    await interkora(message);
+  if (content.startsWith("soko!")) {
+    assertMessage(message);
+    const response = await interkora(await buildPayloadFromMessage(message), message.client);
+    await message.reply(await buildMessageFromPayload(response));
     return;
   }
 
@@ -88,13 +93,14 @@ export default (async function run(message) {
   if (await getSetting(guild.id, "easter", "enabled")) {
     const enabledEggs = await getSetting(guild.id, "easter", "enabled_eggs");
     const allowedChannels = await getSetting(guild.id, "easter", "allowed_channels");
+    const chances = (await getSetting(guild.id, "easter", "chances")) / 100;
 
     if (!allowedChannels || allowedChannels.includes(message.channel.id))
       if (hasChannelPerms(message.channel, ["SendMessages", "ReadMessageHistory"]))
         for (const easterEgg of easterEggs) {
           if (enabledEggs && !enabledEggs.includes(easterEgg.name)) continue;
           try {
-            if (typeof easterEgg.run == "function" && Math.random() <= 0.15)
+            if (typeof easterEgg.run == "function" && Math.random() <= chances)
               await easterEgg.run(message);
           } catch (error) {
             return await errorEmbed({

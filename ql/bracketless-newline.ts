@@ -17,18 +17,15 @@ export const bracketlessNewline: Rule.RuleModule = {
           node.consequent.type === "BlockStatement" ||
           node.alternate ||
           !node.loc ||
-          !node.consequent.loc
+          !node.consequent.loc ||
+          node.loc.start.line === node.consequent.loc.end.line
         )
           return;
-
-        if (node.loc.start.line === node.consequent.loc.end.line) return;
 
         const source = context.sourceCode;
 
         const tokenAfter = source.getTokenAfter(node, { includeComments: true });
-        if (!tokenAfter?.loc) return;
-
-        if (["}", ")"].includes(tokenAfter.value)) return;
+        if (!tokenAfter?.loc || ["}", ")"].includes(tokenAfter.value)) return;
 
         if (tokenAfter.loc.start.line - node.loc.end.line <= 1)
           context.report({

@@ -16,11 +16,10 @@ export function kominator(string: string | undefined): string[] {
  * @returns A string with all elements of the array, joined.
  */
 export function dekominator(strings: string[], shouldList?: boolean): string {
-  if (shouldList)
-    return strings
-      .map(string_ => string_.trim())
-      .join(", ")
-      .replaceAll(/,(?=[^,]*$)/g, " and");
-
-  return strings.map(string_ => string_.trim()).join(",");
+  return shouldList
+    ? strings
+        .map(string_ => string_.trim())
+        .join(", ")
+        .replaceAll(/,(?=[^,]*$)/g, " and")
+    : strings.map(string_ => string_.trim()).join(",");
 }

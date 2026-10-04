@@ -1,27 +1,30 @@
 import { getSetting } from "database/settings";
-import type {
-  AnySelectMenuInteraction,
-  BaseFetchOptions,
-  ButtonInteraction,
-  Channel,
-  ChatInputCommandInteraction,
-  Client,
-  Collection,
-  DMChannel,
-  Guild,
-  GuildMember,
-  InteractionEditReplyOptions,
-  InteractionReplyOptions,
-  InteractionResponse,
-  Message,
-  MessagePayload,
-  ModalSubmitInteraction,
-  NewsChannel,
-  RepliableInteraction,
-  Role,
-  TextChannel,
-  User,
+import {
+  ComponentType,
+  type OmitPartialGroupDMChannel,
+  type AnySelectMenuInteraction,
+  type BaseFetchOptions,
+  type ButtonInteraction,
+  type Channel,
+  type ChatInputCommandInteraction,
+  type Client,
+  type Collection,
+  type DMChannel,
+  type Guild,
+  type GuildMember,
+  type InteractionEditReplyOptions,
+  type InteractionReplyOptions,
+  type InteractionResponse,
+  type Message,
+  type MessagePayload,
+  type ModalSubmitInteraction,
+  type NewsChannel,
+  type RepliableInteraction,
+  type Role,
+  type TextChannel,
+  type User,
 } from "discord.js";
+import { as, assertMessage, type SafeMessage } from "types";
 
 /**
  * Ensures that the channel that you're getting will be gotten.
@@ -102,18 +105,17 @@ export async function safeReply(options: {
 
   if (interaction.replied || interaction.deferred) return await interaction.followUp(replyOptions);
 
-  if (interaction.isButton() || interaction.isAnySelectMenu())
-    return await interaction.reply(replyOptions);
-
-  return await interaction.reply(replyOptions);
+  return interaction.isButton() || interaction.isAnySelectMenu()
+    ? await interaction.reply(replyOptions)
+    : await interaction.reply(replyOptions);
 }
 
 /**
  * Properly handles editing the response/follow up to an interaction.
  * @param {{
  *   interaction: ChatInputCommandInteraction | ButtonInteraction | AnySelectMenuInteraction | ModalSubmitInteraction;
- *   replyOptions?: string | MessagePayload | InteractionReplyOptions;
- *   editOptions?: string | MessagePayload | InteractionEditReplyOptions;
+ *   replyOptions?: MessagePayload | InteractionReplyOptions;
+ *   editOptions?: MessagePayload | InteractionEditReplyOptions;
  * }} options Options.
  * @returns {(Promise<Message<boolean> | InteractionResponse<boolean>>)}
  */
@@ -123,7 +125,7 @@ export async function safeEdit(options: {
     | ButtonInteraction
     | AnySelectMenuInteraction
     | ModalSubmitInteraction;
-  editOptions: string | MessagePayload | InteractionEditReplyOptions;
+  editOptions: InteractionEditReplyOptions;
 }): Promise<Message | InteractionResponse> {
   const { interaction, editOptions } = options;
 
@@ -139,16 +141,15 @@ function isTextableRegularChannel(
   c: Channel | null | undefined,
   me: GuildMember,
 ): c is NewsChannel | DMChannel | TextChannel {
-  if (!c) return false;
-  return (
-    !c.isDMBased() &&
-    c.viewable &&
-    c.permissionsFor(me).has("SendMessages") &&
-    c.isTextBased() &&
-    !c.isThread() &&
-    c.isSendable() &&
-    !c.isVoiceBased()
-  );
+  return c
+    ? !c.isDMBased() &&
+        c.viewable &&
+        c.permissionsFor(me).has("SendMessages") &&
+        c.isTextBased() &&
+        !c.isThread() &&
+        c.isSendable() &&
+        !c.isVoiceBased()
+    : false;
 }
 
 /**
@@ -192,6 +193,30 @@ export async function safeAlertChannel(
     );
 
   return channel;
+}
+
+export async function safeMessage(
+  message: OmitPartialGroupDMChannel<Message>,
+  shouldAssert: false,
+): Promise<OmitPartialGroupDMChannel<Message>>;
+export async function safeMessage(
+  message: OmitPartialGroupDMChannel<Message>,
+  shouldAssert: true,
+): Promise<SafeMessage>;
+export async function safeMessage(
+  message: OmitPartialGroupDMChannel<Message>,
+  shouldAssert: boolean,
+): Promise<SafeMessage | OmitPartialGroupDMChannel<Message>> {
+  if (message.partial) await message.fetch();
+  if (shouldAssert) assertMessage(message);
+  message.content = (
+    message.content === "" && message.components.length > 0
+      ? message.components[0].type === ComponentType.TextDisplay
+        ? message.components[0].content
+        : ""
+      : message.content
+  ).trim();
+  return as<SafeMessage>(message);
 }
 
 /**

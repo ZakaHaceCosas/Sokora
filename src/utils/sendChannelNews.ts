@@ -4,7 +4,7 @@ import type { ChatInputCommandInteraction, Guild, TextChannel } from "discord.js
 import { newsEmbed } from "embeds/newsEmbed";
 import { channelCheck } from "./channelCheck";
 import { safeChannel } from "./safeThings";
-import { isInteractionSafe } from "./types";
+import { assertInteraction } from "types";
 
 /**
  * Sends news to a channel.
@@ -20,17 +20,17 @@ export async function sendChannelNews(
   newsOptions: {
     title: string;
     body: string;
-    author: string;
+    author_id: string;
     id: number;
-    imageURL?: string | null;
-    category_id?: string | null;
+    image_url?: string;
+    category_id?: string;
   },
   willEdit?: boolean,
 ): Promise<void> {
-  const { title, body, author, id, imageURL, category_id } = newsOptions;
-  if (!isInteractionSafe(interaction)) return;
+  const { title, body, author_id, id, image_url, category_id } = newsOptions;
+  assertInteraction(interaction);
 
-  const category = await getSetting(guild.id, "news", "categories", category_id ?? undefined);
+  const category = await getSetting(guild.id, "news", "categories", category_id);
   const channel = (await safeChannel(
     guild,
     category.channel ?? (await getSetting(guild.id, "news", "channel")) ?? interaction.channel.id,
@@ -48,7 +48,14 @@ export async function sendChannelNews(
 
   const message = await channel.send({
     components: [
-      await newsEmbed(guild, { title, body, author, id, imageURL, categoryRoles: category.roles }),
+      await newsEmbed(guild, {
+        title,
+        body,
+        author_id,
+        id,
+        image_url,
+        categoryRoles: category.roles,
+      }),
     ],
     flags: "IsComponentsV2",
   });
@@ -56,5 +63,6 @@ export async function sendChannelNews(
     await updateNews(guild.id, id, title, body, message.id);
     return;
   }
-  await postNews(guild.id, title, body, author, message.id, imageURL, id, category_id);
+
+  await postNews(guild.id, title, body, author_id, message.id, image_url, id, category_id);
 }

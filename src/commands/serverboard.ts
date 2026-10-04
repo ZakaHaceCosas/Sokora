@@ -4,10 +4,8 @@ import {
   type ButtonInteraction,
   type ChatInputCommandInteraction,
   type ContainerBuilder,
-  type InteractionResponse,
-  type Message,
 } from "discord.js";
-import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
+import { isButtonErrory, useErrorEmbed } from "embeds/errorEmbed";
 import { serverEmbed } from "embeds/serverEmbed";
 import { COLLECTOR_DURATION } from "utils/constants";
 import { handlePages } from "utils/pagination";
@@ -19,31 +17,28 @@ export const data = new SlashCommandBuilder()
   .addNumberOption(number => number.setName("page").setDescription("The page you want to see."))
   .setContexts(0);
 
-export async function run(
-  interaction: ChatInputCommandInteraction,
-): Promise<Message | InteractionResponse | undefined> {
+export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   let guildList: ServerboardEntry[];
   try {
     guildList = await fetchServerboard(interaction.client);
   } catch (error) {
-    return await errorEmbed({
+    return await useErrorEmbed({
       interaction,
       error,
       title: "Serverboard error.",
-      log: true,
-      forward: true,
       fileName: "serverboard",
     });
   }
 
   const pages = guildList.length;
-  if (!pages)
-    return await errorEmbed({
+  if (!pages) {
+    return await useErrorEmbed({
       interaction,
       title: "No public server found.",
       reason:
         "By some magical miracle, all the servers using Sokora turned off their visibility. Use /settings serverboard `shown: True` to make your server publicly visible.",
     });
+  }
 
   let page = Math.max(0, Math.min(interaction.options.getNumber("page") ?? 0, pages) - 1);
   async function getContainer(shouldDisableButtons?: boolean): Promise<ContainerBuilder> {
@@ -68,7 +63,7 @@ export async function run(
   if (pages == 1) return;
   const collector = reply.createMessageComponentCollector({ time: COLLECTOR_DURATION });
   collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
-    if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
+    if (await isButtonErrory({ i: buttonInteraction, interaction, reply })) return;
     collector.resetTimer({ time: COLLECTOR_DURATION });
     if (buttonInteraction.customId == "please") return;
 

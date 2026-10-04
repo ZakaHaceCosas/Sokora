@@ -5,9 +5,9 @@ import {
   type InteractionResponse,
   type Message,
 } from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
-import { errorCheck, modEmbed } from "embeds/modEmbed";
-import { safeMember } from "utils/safeThings";
+import { unmute } from "src/features/mod/unmute";
+import { assertInteraction } from "src/types";
+import { shouldModerateSilently } from "utils/silent";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("unmute")
@@ -18,59 +18,25 @@ export const data = new SlashCommandSubcommandBuilder()
   .addStringOption(reason =>
     reason.setName("reason").setDescription("The reason for unmuting the user."),
   )
-  .addBooleanOption(bool =>
-    bool
+  .addBooleanOption(bool => {
+    return bool
       .setName("silent")
       .setDescription(
         "If true, the user won’t be notified about this action (overrides the server setting).",
-      ),
-  );
+      );
+  });
 
 export async function run(
   interaction: ChatInputCommandInteraction,
 ): Promise<Message | InteractionResponse | undefined> {
-  const guild = interaction.guild;
-  if (!guild) return;
-  const user = interaction.options.getUser("user");
-  if (!user)
-    return await errorEmbed({
-      interaction,
-      title: "No user provided.",
-      reason:
-        "You somehow ran the command without a user being provided. That is an error. You might want to report this, as it is not supposed to ever happen.",
-    });
+  assertInteraction(interaction);
 
+  const user = interaction.options.getUser("user", true);
   const reason = interaction.options.getString("reason");
-  const target = await safeMember(guild, user.id);
 
-  if (
-    await errorCheck("Moderate Members", {
-      interaction,
-      user,
-      action: "Unmute",
-      errorOptions: { allErrors: false, botError: true, outsideError: true },
-    })
-  )
-    return;
-
-  if (!target?.isCommunicationDisabled())
-    return await errorEmbed({
-      interaction,
-      title: "You can’t unmute this user.",
-      reason: "The user was never muted.",
-    });
-
-  const isSilent =
-    interaction.options.getBoolean("silent") ??
-    (await getSetting(guild.id, "moderation", "silent"));
-
-  try {
-    await modEmbed(
-      { interaction, user, action: "Unmuted", shouldDm: true, dbAction: "UNMUTE", isSilent },
-      reason,
-    );
-    await target?.edit({ communicationDisabledUntil: null });
-  } catch (error) {
-    await errorEmbed({ interaction, error, forward: true, fileName: "unmute" });
-  }
+  return await unmute(interaction, {
+    user,
+    reason,
+    isSilent: await shouldModerateSilently(interaction),
+  });
 }

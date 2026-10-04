@@ -16,26 +16,24 @@ import { newsModal } from "utils/newsModal";
 import { replaceVariables } from "utils/replace";
 import { safeChannel, safeMember } from "utils/safeThings";
 import { sendChannelNews } from "utils/sendChannelNews";
-import { isInteractionSafe } from "utils/types";
+import { assertInteraction } from "types";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("edit")
   .setDescription("Edits a news post.")
-  .addNumberOption(number =>
-    number
+  .addNumberOption(number => {
+    return number
       .setName("id")
       .setDescription("The ID of the news post that you want to edit.")
-      .setRequired(true),
-  );
+      .setRequired(true);
+  });
 
 export async function run(
   interaction: ChatInputCommandInteraction,
 ): Promise<Message | InteractionResponse | undefined> {
   const user = interaction.user;
-  if (
-    !isInteractionSafe(interaction) ||
-    !(await safeMember(interaction.guild, user.id)).permissions.has("ManageGuild")
-  )
+  assertInteraction(interaction);
+  if (!(await safeMember(interaction.guild, user.id)).permissions.has("ManageGuild"))
     return await errorEmbed({
       interaction,
       title: "You can’t execute this command.",
@@ -85,7 +83,7 @@ export async function run(
       await sendChannelNews(
         interaction.guild,
         interaction,
-        { title, body, author: news.author, id },
+        { title, body, author_id: news.author_id, id },
         true,
       );
       return await modalInteraction.reply({
@@ -100,9 +98,9 @@ export async function run(
     )) as TextChannel;
 
     await Promise.all([
-      channel.messages.edit(news.messageID, {
+      channel.messages.edit(news.message_id, {
         components: [
-          await newsEmbed(interaction.guild, { title, body, author: news.author, id }, true),
+          await newsEmbed(interaction.guild, { title, body, author_id: news.author_id, id }, true),
         ],
         flags: "IsComponentsV2",
       }),

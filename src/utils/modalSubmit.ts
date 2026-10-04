@@ -8,7 +8,7 @@ import type {
   ModalSubmitInteraction,
 } from "discord.js";
 import { COLLECTOR_DURATION } from "./constants";
-import { errorEmbed } from "embeds/errorEmbed";
+import { useErrorEmbed } from "embeds/errorEmbed";
 
 /**
  * Collects a modal submit interaction.
@@ -25,7 +25,7 @@ export async function modalSubmit(
   try {
     await (interaction as ButtonInteraction).showModal(modal);
   } catch (error) {
-    if (fileName) await errorEmbed({ interaction, error, log: true, forward: true, fileName });
+    if (fileName) await useErrorEmbed({ interaction, error, fileName });
     else console.error(error);
   }
 
@@ -35,6 +35,8 @@ export async function modalSubmit(
       filter: m => m.user.id === interaction.user.id && m.customId === modal.data.custom_id,
     });
   } catch {
-    /* In case of timeout */
+    /*
+    In case of timeout
+    */
   }
 }

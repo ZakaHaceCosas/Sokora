@@ -1,6 +1,6 @@
 import { getSetting } from "database/settings";
 import { SlashCommandSubcommandBuilder, type ChatInputCommandInteraction } from "discord.js";
-import { errorCheck, modEmbed } from "embeds/modEmbed";
+import { hasModError, modEmbed } from "embeds/modEmbed";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("warn")
@@ -9,13 +9,13 @@ export const data = new SlashCommandSubcommandBuilder()
     user.setName("user").setDescription("The user that you want to warn.").setRequired(true),
   )
   .addStringOption(string => string.setName("reason").setDescription("The reason for the warn."))
-  .addBooleanOption(bool =>
-    bool
+  .addBooleanOption(bool => {
+    return bool
       .setName("silent")
       .setDescription(
         "If true, the user won’t be notified about this action (overrides the server setting).",
-      ),
-  );
+      );
+  });
 
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   const user = interaction.options.getUser("user", true);
@@ -24,7 +24,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
 
   if (
     !guild ||
-    (await errorCheck("Moderate Members", {
+    (await hasModError("Moderate Members", {
       interaction,
       user,
       action: "Warn",

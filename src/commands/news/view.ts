@@ -6,10 +6,8 @@ import {
   type ChatInputCommandInteraction,
   type ContainerBuilder,
   type Guild,
-  type InteractionResponse,
-  type Message,
 } from "discord.js";
-import { buttonCheck, errorEmbed } from "embeds/errorEmbed";
+import { isButtonErrory, useErrorEmbed } from "embeds/errorEmbed";
 import { newsEmbed } from "embeds/newsEmbed";
 import { COLLECTOR_DURATION } from "utils/constants";
 import { handlePages } from "utils/pagination";
@@ -22,12 +20,10 @@ export const data = new SlashCommandSubcommandBuilder()
     number.setName("page").setDescription("The news post that you want to see."),
   );
 
-export async function run(
-  interaction: ChatInputCommandInteraction,
-): Promise<Message | InteractionResponse | undefined> {
+export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   const guild = interaction.guild;
   if (!guild)
-    return await errorEmbed({
+    return await useErrorEmbed({
       interaction,
       title: "Error viewing a news post.",
       reason: "This command can only be used in a server.",
@@ -36,7 +32,7 @@ export async function run(
   let news = await listAllNews(guild.id);
   let pages = news.length;
   if (!pages)
-    return await errorEmbed({
+    return await useErrorEmbed({
       interaction,
       title: "No news found.",
       reason: "Admins can post news with the **/news post** command.",
@@ -46,9 +42,9 @@ export async function run(
 
   async function getContainer(guild: Guild, isDisabled: boolean): Promise<ContainerBuilder> {
     const currentNews = news[page];
-    const { author, title, body, id, imageURL } = currentNews;
+    const { author_id, title, body, id, image_url } = currentNews;
 
-    return await newsEmbed(guild, { title, body, author, id, imageURL }, false, {
+    return await newsEmbed(guild, { title, body, author_id, id, image_url }, false, {
       pages,
       page,
       isDisabled,
@@ -66,7 +62,7 @@ export async function run(
   collector.on(
     "collect",
     async (buttonInteraction: ButtonInteraction | StringSelectMenuInteraction) => {
-      if (await buttonCheck({ i: buttonInteraction, interaction, reply })) return;
+      if (await isButtonErrory({ i: buttonInteraction, interaction, reply })) return;
       collector.resetTimer({ time: COLLECTOR_DURATION });
       const cID = buttonInteraction.customId;
       if (cID == "please") return;

@@ -13,7 +13,7 @@ import { channelCheck, hasChannelPerms } from "utils/channelCheck";
 import { colorize, Sokolors } from "utils/colorize";
 import { mention } from "utils/mention";
 import { safeChannel, safeUser } from "utils/safeThings";
-import type { Event } from "utils/types";
+import type { Event } from "types";
 
 export default (async function run(reaction, user) {
   const client = user.client;
@@ -85,7 +85,9 @@ export default (async function run(reaction, user) {
   if (!guild) return;
 
   const starEmoji = await getSetting(guild.id, "starboard", "emoji");
-  if (reaction.emoji.name != starEmoji) return;
+  if (!(await getSetting(guild.id, "starboard", "enabled")) || reaction.emoji.name != starEmoji)
+    return;
+
   if (!content && attachments.size === 0) return;
 
   const starboardChannelId = await getSetting(guild.id, "starboard", "channel");
@@ -148,7 +150,7 @@ export default (async function run(reaction, user) {
   try {
     if (!existingStarred) return;
 
-    const starMessage = await starboardChannel.messages.fetch(existingStarred.star_message);
+    const starMessage = await starboardChannel.messages.fetch(existingStarred.star_message_id);
     if (starMessage.partial) await starMessage.fetch();
     if (starCount == 0) {
       await starMessage.delete();
@@ -160,9 +162,9 @@ export default (async function run(reaction, user) {
     await setStarred(
       guild.id,
       id,
-      existingStarred.channel,
+      existingStarred.channel_id,
       author.id,
-      existingStarred.message,
+      existingStarred.message_id,
       starCount,
       new Date(message.createdTimestamp),
     );

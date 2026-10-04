@@ -15,7 +15,7 @@ import { newsModal } from "utils/newsModal";
 import { replaceVariables } from "utils/replace";
 import { safeMember } from "utils/safeThings";
 import { sendChannelNews } from "utils/sendChannelNews";
-import { isInteractionSafe } from "utils/types";
+import { assertInteraction } from "types";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("post")
@@ -25,10 +25,8 @@ export async function run(
   interaction: ChatInputCommandInteraction,
 ): Promise<Message | InteractionResponse | undefined> {
   const user = interaction.user;
-  if (
-    !isInteractionSafe(interaction) ||
-    !(await safeMember(interaction.guild, user.id)).permissions.has("ManageGuild")
-  )
+  assertInteraction(interaction);
+  if (!(await safeMember(interaction.guild, user.id)).permissions.has("ManageGuild"))
     return await errorEmbed({
       interaction,
       title: "You can’t execute this command.",
@@ -62,25 +60,25 @@ export async function run(
       await sendChannelNews(guild, interaction, {
         title,
         body,
-        author: modalInteraction.user.displayName,
-        imageURL: media
+        author_id: modalInteraction.user.id,
+        image_url: media
           ? dekominator(
               media
-                .filter(
-                  item =>
+                .filter(item => {
+                  return (
                     item.contentType &&
-                    (item.contentType.startsWith("image/") ||
-                      item.contentType.startsWith("video/")),
-                )
+                    (item.contentType.startsWith("image/") || item.contentType.startsWith("video/"))
+                  );
+                })
                 .map(image => image.url)
                 .toReversed(),
             )
-          : null,
+          : undefined,
         id: ((await getLatestNews(guild.id))[0]?.id ?? 0) + 1,
         category_id:
           (await getSetting(guild.id, "news", "categories")).length > 0
             ? modalInteraction.fields.getStringSelectValues("category")[0]
-            : null,
+            : undefined,
       });
     } catch (error) {
       return await errorEmbed({ interaction, error, forward: true, fileName: "post" });

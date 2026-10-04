@@ -1,9 +1,9 @@
 import type { Client, InteractionResponse, Message } from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
+import { useErrorEmbed } from "embeds/errorEmbed";
 import { readdirSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { client } from "src/bot";
+import { client } from "botfile";
 
 interface Event {
   name: string;
@@ -42,12 +42,10 @@ async function handler(
     await function_(...arguments_);
   } catch (error) {
     try {
-      await errorEmbed({
+      return await useErrorEmbed({
         client,
         title: "Error while executing event",
         error,
-        log: true,
-        forward: true,
         fileName,
       });
     } catch (error_) {
@@ -81,15 +79,12 @@ export async function loadEasterEggs(): Promise<Message | InteractionResponse | 
 
         easterEggs.push(easterEgg);
         easterEggNames.push(easterEggName);
-        console.log("Loaded egg:", easterEggName);
       }
     } catch (error) {
-      return await errorEmbed({
+      return await useErrorEmbed({
         client,
         error,
         title: `Error loading easter egg ${easterEggFile}.`,
-        log: true,
-        forward: true,
         fileName: "events",
       });
     }

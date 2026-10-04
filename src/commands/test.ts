@@ -1,14 +1,6 @@
-import {
-  codeBlock,
-  ContainerBuilder,
-  SeparatorBuilder,
-  SeparatorSpacingSize,
-  SlashCommandBuilder,
-  TextDisplayBuilder,
-  type ChatInputCommandInteraction,
-} from "discord.js";
+import { EmbedBuilder, SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js";
 import { colorize, Sokolors } from "utils/colorize";
-import { isInteractionSafe } from "utils/types";
+import { assertInteraction } from "types";
 
 export const data = new SlashCommandBuilder()
   .setName("test")
@@ -16,26 +8,22 @@ export const data = new SlashCommandBuilder()
   .setContexts(0);
 
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
-  if (!isInteractionSafe(interaction)) return;
+  assertInteraction(interaction);
 
   await interaction.deferReply();
 
   const output = (await Bun.$`bun test`.nothrow()).stderr.toString();
 
   await interaction.editReply({
-    components: [
-      new ContainerBuilder()
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent("# test suite\n" + codeBlock("bash", output)),
+    embeds: [
+      new EmbedBuilder()
+        .setTitle("IRL test suite")
+        .setDescription(
+          "## test suite executed\ncheck attachment for output\n-# running on `bun:test` " +
+            Bun.version_with_sha,
         )
-        .addSeparatorComponents(
-          new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Large),
-        )
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent("-# running on `bun:test` " + Bun.version_with_sha),
-        )
-        .setAccentColor(await colorize({ hue: Sokolors.Yellow })),
+        .setColor((await colorize({ hue: Sokolors.Yellow })) ?? null),
     ],
-    flags: "IsComponentsV2",
+    files: [{ attachment: Buffer.from(output, "utf8"), name: "output.txt" }],
   });
 }
