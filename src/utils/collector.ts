@@ -13,9 +13,10 @@ type CollectedInteraction =
   | AnySelectMenuInteraction
   | ModalSubmitInteraction;
 
-// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
 export function collect<
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   I1 extends CollectedInteraction = CollectedInteraction,
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   I2 extends CollectedInteraction = CollectedInteraction,
 >(
   interaction: I1,

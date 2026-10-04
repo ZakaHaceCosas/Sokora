@@ -26,7 +26,7 @@ export async function createCase(
   userID: string,
   modType: ModType,
   moderator: string,
-  reason = "",
+  reason: string | null,
   expiresAt?: Date,
 ): Promise<number> {
   const id: number =

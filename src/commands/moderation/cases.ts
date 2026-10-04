@@ -49,7 +49,7 @@ async function generateContainer(options: {
     UNBAN: "🔓",
     LOCK: "🔒",
     UNLOCK: "🔓",
-    SLOWDOWN: "⏳"
+    SLOWDOWN: "⏳",
   };
 
   const nothingMessage = [

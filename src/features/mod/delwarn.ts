@@ -1,60 +1,57 @@
 import { listUserCases, removeCase } from "database/moderation";
-import type { ContainerBuilder, User } from "discord.js";
-import { buildErrorEmbed } from "embeds/errorEmbed";
-import { hasModError, modEmbed } from "embeds/modEmbed";
-import type { SafeChatInteraction } from "types";
+import type { Guild, User } from "discord.js";
+import { getModError } from "embeds/modEmbed";
+import type { FeatureOutput } from "types";
+import { errorToFeature } from "utils/errorType";
+import { feature, type MethodParameters } from "utils/feature";
 import { mention } from "utils/mention";
 
-interface Options {
-  user: User;
+interface P {
+  target: User;
+  moderator: User;
+  guild: Guild;
   isSilent: boolean;
   warnId: number;
 }
 
-export async function delwarn(
-  interaction: SafeChatInteraction,
-  options: Options,
-): Promise<ContainerBuilder> {
-  const { isSilent, user, warnId } = options;
+interface O {
+  title: string;
+  reason: string | null;
+}
 
-  if (
-    await hasModError("Moderate Members", {
-      interaction,
-      user,
-      action: "Remove a warning",
-      errorOptions: { allErrors: true, botError: false },
-    })
-  )
-    return;
+async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOutput<O>> {
+  const [ok, fail, options] = parameters;
+  const { target, warnId, guild } = options;
 
-  const warns = await listUserCases(interaction.guild.id, user.id, "WARN");
+  const error = await getModError("ModerateMembers", {
+    target,
+    // TODO: add delwarn or document that warn is used for delwarn too, either of those
+    action: "WARN",
+    errorOptions: { allErrors: true, botError: false },
+  });
+
+  if (error) return fail(errorToFeature(error));
+
+  const warns = await listUserCases(guild.id, target.id, "WARN");
   const newWarns = warns.filter(warn => warn.id != warnId);
 
   if (newWarns.length == warns.length)
-    return await buildErrorEmbed({
-      interaction,
+    return fail({
       title: `There is no warning with the id of ${warnId}.`,
     });
 
   try {
-    await removeCase(interaction.guild.id, warnId);
+    await removeCase(guild.id, warnId);
   } catch (error) {
-    return await useErrorEmbed({
-      interaction,
-      error,
-      forward: true,
-      fileName: "delwarn",
-    });
+    return fail(errorToFeature(error));
   }
 
-  return await modEmbed({
-    interaction,
-    user,
-    shouldDm: true,
-    customText: {
-      logTitle: `Removed a warning from ${mention(user.id, "USER")}`,
-      dmTitle: "Your warning has been removed",
-    },
-    isSilent,
+  return ok({
+    title: `Removed a warning from ${mention(target.id, "USER")}`,
+    // dmTitle: "Your warning has been removed",
+    //    isSilent,
+    reason: null,
   });
 }
+
+export const delwarn = feature("mod/delwarn", method);

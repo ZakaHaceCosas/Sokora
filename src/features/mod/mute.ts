@@ -1,65 +1,55 @@
-import type { User } from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
-import { hasModError, modEmbed } from "embeds/modEmbed";
-import type { SafeChatInteraction } from "src/types";
+import { createCase } from "database/moderation";
+import type { Guild, User } from "discord.js";
+import { getModError } from "embeds/modEmbed";
+import type { FeatureOutput } from "types";
 import { MILLISEC_28D } from "utils/constants";
+import { errorToFeature } from "utils/errorType";
 import { safeMember } from "utils/safeThings";
 
-export async function mute(
-  interaction: SafeChatInteraction,
-  options: {
-    durationMillisec: number;
+export async function mute(options: {
+  guild: Guild;
+  durationMillisec: number;
+  reason: string | null;
+  moderator: User;
+  target: User;
+}): Promise<
+  FeatureOutput<{
+    title: string;
     reason: string | null;
-    isSilent: boolean;
-    user: User;
-  },
-) {
-  const { isSilent, user, durationMillisec, reason } = options;
+  }>
+> {
+  const { moderator, guild, target, durationMillisec, reason } = options;
 
-  if (
-    await hasModError("Moderate Members", {
-      interaction,
-      user,
-      action: "Mute",
-      errorOptions: { allErrors: true, botError: true, outsideError: true },
-    })
-  )
-    return;
+  const error = await getModError("ModerateMembers", {
+    target,
+    action: "MUTE",
+    errorOptions: { allErrors: true, botError: true, outsideError: true },
+  });
+
+  if (error) return errorToFeature("mod/mute", error);
 
   if (durationMillisec > MILLISEC_28D || durationMillisec <= 0)
-    return await errorEmbed({
-      interaction,
-      title: `You can’t mute ${user.username}.`,
+    return {
+      title: `You can’t mute ${target.username}.`,
       reason: "The duration is invalid or is above the 28 day limit.",
-    });
+    };
 
-  if ((await safeMember(interaction.guild, user.id)).isCommunicationDisabled())
-    return await errorEmbed({
-      interaction,
-      title: `You can’t mute ${user.username}.`,
+  if ((await safeMember(guild, target.id)).isCommunicationDisabled())
+    return {
+      title: `You can’t mute ${target.username}.`,
       reason: "The user is already muted.",
-    });
+    };
 
   const time = new Date(
     Date.parse(new Date().toISOString()) + Date.parse(new Date(durationMillisec).toISOString()),
   ).toISOString();
 
   try {
-    await modEmbed({
-      interaction,
-      user,
-      action: "Muted",
-      duration: durationMillisec,
-      shouldDm: true,
-      dbAction: "MUTE",
-      expiresAt: new Date(durationMillisec),
-      isSilent,
-      reason,
-    });
     await (
-      await safeMember(interaction.guild, user.id)
+      await safeMember(guild, target.id)
     )?.edit({ communicationDisabledUntil: time, reason: reason ?? undefined });
+    await createCase(guild.id, target.id, "MUTE", moderator.id, reason);
   } catch (error) {
-    await errorEmbed({ interaction, error, forward: true, fileName: "mute" });
+    return errorToFeature("mod/mute", error);
   }
 }

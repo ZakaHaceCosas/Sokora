@@ -1,24 +1,22 @@
 // TODO: this is worse than before, not better
 // i mean technically better but awful CQ
 
+import { client as client_ } from "botfile";
 import { getCase, type ModType } from "database/moderation";
 import {
   SectionBuilder,
   TextDisplayBuilder,
   ThumbnailBuilder,
-  type ChatInputCommandInteraction,
   ContainerBuilder,
   type User,
   type Channel,
   type Guild,
   type PermissionFlagsBits,
-  type AttachmentBuilder,
 } from "discord.js";
 import ms from "enhanced-ms";
 import { mention } from "utils/mention";
 import { safeMember } from "utils/safeThings";
 import { colorize, Sokolors } from "utils/colorize";
-import { buildErrorEmbed } from "./errorEmbed";
 import { logChannel } from "utils/logChannel";
 
 interface ModActionPayload {
@@ -33,7 +31,7 @@ interface ModActionPayload {
   previousCaseId?: number;
 }
 
-enum ModErrorCode {
+export enum ModErrorCode {
   CaseDoesNotExist,
   CantModerateSokora,
   ModeratorNotFound,
@@ -56,18 +54,18 @@ export type ModError =
     }
   | {
       code: Omit<ModErrorCode, ModErrorCode.MissingPermission>;
-  };
+    };
 
-  export function isModError(error: unknown): error is ModError {
-    return error != null && typeof error == "object"&& Object.hasOwn(error, "code")
-  }
+export function isModError(error: unknown): error is ModError {
+  return error != null && typeof error == "object" && Object.hasOwn(error, "code");
+}
 
-  // TODO: check that this is a ModActionResult with success false
-  export function isModErroryResult(error: unknown): error is ModError {
-    return error != null && typeof error == "object"&& Object.hasOwn(error, "code")
-    }
+// TODO: check that this is a ModActionResult with success false
+export function isModErroryResult(error: unknown): error is ModActionResult & { success: false } {
+  return error != null && typeof error == "object" && Object.hasOwn(error, "code");
+}
 
-type ModActionResult = (
+export type ModActionResult = (
   | {
       success: true;
     }
@@ -88,7 +86,6 @@ type ModActionResult = (
   );
 
 type ErrorOptions = Partial<ModActionPayload> & {
-  interaction: ChatInputCommandInteraction;
   errorOptions: {
     allErrors: boolean;
     botError: boolean;
@@ -117,8 +114,7 @@ export async function getModError(
   permission: keyof typeof PermissionFlagsBits,
   options: ErrorOptions,
 ): Promise<ModError | undefined> {
-  const { interaction, guild, moderator, previousCaseId, target, channel, action, errorOptions } =
-    options;
+  const { guild, moderator, previousCaseId, target, channel, action, errorOptions } = options;
   const { allErrors, botError, channelError, outsideError, banCheckError } = errorOptions;
 
   if (!guild) return;
@@ -127,7 +123,7 @@ export async function getModError(
     const previousCase = await getCase(guild.id, previousCaseId);
     if (
       previousCase.length === 0 ||
-        previousCase[0].user_id != target?.id ||
+      previousCase[0].user_id != target?.id ||
       previousCase[0].type != action
     )
       return { code: ModErrorCode.CaseDoesNotExist };
@@ -135,8 +131,8 @@ export async function getModError(
 
   if (!moderator) return { code: ModErrorCode.ModeratorNotFound };
 
-  const member = await safeMember(guild, interaction.user.id);
-  const client = await safeMember(guild, interaction.client.user.id);
+  const member = await safeMember(guild, moderator.id);
+  const client = await safeMember(guild, client_.user.id);
 
   if (botError && !client.permissions.has(permission)) {
     return { code: ModErrorCode.MissingPermission, permission };
@@ -190,7 +186,7 @@ export async function getModError(
 
   if (outsideError && !target) {
     // target SHOULD exist in server
-return {
+    return {
       code: ModErrorCode.TargetOutside,
     };
   }
@@ -203,7 +199,7 @@ return {
     };
   }
 
-  if (target.id == interaction.client.user.id) {
+  if (target.id == client.user.id) {
     return {
       code: ModErrorCode.CantModerateSokora,
     };
@@ -230,100 +226,6 @@ return {
   }
 
   return;
-}
-
-export async function errorEmbedFromModError(
-  options: ModActionResult & { success : false },
-): Promise<[ContainerBuilder, AttachmentBuilder[]]> {
-  const { target, action, error } = options;
-
-  // TODO: improve pinpointing on all embeds
-
-  if (Error.isError(error)) {
-    return await buildErrorEmbed({
-      error,
-    })
-  }
-
-  if (error.code == ModErrorCode.CaseDoesNotExist)
-    return await buildErrorEmbed({
-      title: `You can’t edit this ${action.toLowerCase()}.`,
-      reason: `The ${action.toLowerCase()} doesn’t exist.`,
-    });
-
-  if (error.code == ModErrorCode.ModeratorNotFound)
-    return buildErrorEmbed({
-      title: `Failed to ${action.toLowerCase()}.`,
-      reason: "Cannot find the moderator.",
-    });
-
-  if (error.code == ModErrorCode.MissingPermission)
-    return buildErrorEmbed({
-      title: "The bot can’t execute this command.",
-      // TODO: type error
-      reason: `The bot is missing the **\`${(error ).permission}\`** permission. If you want to run this command, you might want to give the bot this permission.`,
-    });
-
-  if (error.code == ModErrorCode.ChannelDoesNotExist) {
-    return buildErrorEmbed({
-      title: "The bot can’t execute this command.",
-      reason: "The provided channel does not exist!",
-    });
-  }
-
-  if (error.code == ModErrorCode.TargetNotFound) {
-    return await buildErrorEmbed({
-      title: "You can’t ban this user.",
-      reason: "This user doesn’t exist.",
-    });
-  }
-
-  if (error.code == ModErrorCode.AlreadyBanned) {
-    return await buildErrorEmbed({
-      title: "You can’t ban this user.",
-      reason: "This user is already banned.",
-    });
-  }
-
-  if (error.code == ModErrorCode.AlreadyUnbanned)
-    return buildErrorEmbed({
-      title: "You can’t unban this user.",
-      reason: "This user isn’t currently banned.",
-    });
-
-  if (error.code == ModErrorCode.TargetOutside)
-    return buildErrorEmbed({
-      title: `You can’t ${action.toLowerCase()} ${target?.displayName}.`,
-      reason: "This user isn’t in this server.",
-    });
-
-  if (error.code == ModErrorCode.CantModerateSelf) {
-    return buildErrorEmbed({ title: `You can’t ${action.toLowerCase()} yourself.` });
-  }
-
-  if (error.code == ModErrorCode.CantModerateSokora) {
-    return buildErrorEmbed({ title: `You can’t ${action.toLowerCase()} Sokora.` });
-  }
-
-  if (error.code == ModErrorCode.NotApiModeratable)
-    return buildErrorEmbed({
-      title: `You can’t ${action.toLowerCase()} ${target?.displayName}.`,
-      reason: [
-        "The member cannot be moderated by Sokora.\n",
-        "**There are three reasons as to why this error might occur:**",
-        "- The member has a higher role position than the bot;",
-        "- The member is an administrator;",
-        "- The member is the owner of the server.",
-      ].join("\n"),
-    });
-
-  if (error.code == ModErrorCode.RolePosSame || error.code == ModErrorCode.TargetRolePosHigher)
-    return buildErrorEmbed({
-      title: `You can’t ${action.toLowerCase()} ${target?.displayName}.`,
-      reason: `The member has ${error.code == ModErrorCode.RolePosSame ? "the same" : "a higher"} role position ${error.code == ModErrorCode.RolePosSame ? "as" : "than"} you.`,
-    });
-
-  throw new Error(`Unhandled ModError type: ${JSON.stringify(error)}`);
 }
 
 function produceGeneralValues(modAction: ModEmbedOptions): string[] {
@@ -389,23 +291,21 @@ export async function buildDmModEmbed(modAction: ModEmbedOptions): Promise<Conta
 }
 
 export async function useModEmbed(options: ModEmbedOptions, shouldDm = false): Promise<void> {
-  const container = await buildModEmbed(options)
+  const container = await buildModEmbed(options);
 
   await logChannel(
-       options.guild,
-       { components: [container], flags: "IsComponentsV2" },
-       shouldDm,
-       options.target
-         ? {
-             isSilent: options.isSilent ?? false,
-             user: options.target,
-             options: {
-               components: [
-                 await buildDmModEmbed(options)
-               ],
-               flags: "IsComponentsV2",
-             },
-           }
-         : undefined,
-     )
+    options.guild,
+    { components: [container], flags: "IsComponentsV2" },
+    shouldDm,
+    options.target
+      ? {
+          isSilent: options.isSilent ?? false,
+          user: options.target,
+          options: {
+            components: [await buildDmModEmbed(options)],
+            flags: "IsComponentsV2",
+          },
+        }
+      : undefined,
+  );
 }

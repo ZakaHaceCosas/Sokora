@@ -30,16 +30,24 @@ type RegistrationsDef = Satisfies<
   }
 >;
 
-export async function getRegistration(entity_id: string): Promise<{}> {
+export async function getRegistration(entity_id: string): Promise<
+  | {
+      payload: TypeOfDefinition<RegistrationsDef>["payload"];
+      created_at: TypeOfDefinition<RegistrationsDef>["created_at"];
+      updated_at: TypeOfDefinition<RegistrationsDef>["updated_at"];
+    }
+  | undefined
+> {
   const res = await db<
     TypeOfDefinition<RegistrationsDef>[]
   >`SELECT "payload", "created_at", "updated_at" FROM itk_registrations WHERE "entity_id" = ${entity_id};`;
+  return res[0] ?? undefined;
 }
 
-export async function setRegistration(entity_id: string) {
-  const res = await db<
-    TypeOfDefinition<RegistrationsDef>[]
-  >`SELECT "payload", "created_at", "updated_at" FROM itk_registrations WHERE "entity_id" = ${entity_id};`;
+export async function setRegistration(entity_id: string): Promise<void> {
+  // TODO: ??? dreamed up by zed
+  await db`INSERT INTO itk_registrations ("entity_id", "payload", "created_at", "updated_at") VALUES (${entity_id}, {}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT ("entity_id") DO UPDATE SET "updated_at" = CURRENT_TIMESTAMP;`;
+  throw new Error("Not implemented");
 }
 
 export async function addWhitelist(
@@ -79,4 +87,6 @@ export async function addRequestor(
   await db`INSERT INTO itk_requestors ("guild_id", "entity_id", "entity_type") VALUES (${guild_id}, ${entity_id}, ${entity_type});`;
 }
 
-export async function getEntityPermission() {}
+export async function getEntityPermission(): Promise<void> {
+  await fetch("");
+}

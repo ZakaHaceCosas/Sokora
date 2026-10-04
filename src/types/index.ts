@@ -133,25 +133,38 @@ export interface GHCommit {
 
 /// FEATURE TYPES
 
-export type FeatureError = { title: string; reason: string }
+export interface FeatureError {
+  title: string;
+  reason?: string;
+}
 
+/**
+ * All valid feature names.
+ *
+ * Yes, this union type is manually maintained. Not ideal, but considering we don’t add features every single day it’s reasonable enough. If you add a feature, make sure to add it here too.
+ */
 export type FeatureName =
-  `${"mod" | "math" | "games"}/${string}`
+  | `games/${"rps" | "coin"}`
+  | `math/${"calc" | "graph"}`
+  | `mod/${"ban" | "unban" | "mute" | "kick" | "lock" | "unlock" | "warn" | "slowdown" | "delwarn" | "clear"}`;
+
+export interface PrimitiveFeatureSuccess<S> {
+  success: true;
+  feature: FeatureName;
+  out: S;
+}
+
+export interface PrimitiveFeatureError<F = FeatureError> {
+  success: false;
+  feature: FeatureName;
+  out: F;
+}
 
 /**
  * Output of using a feature.
  */
 export type FeatureOutput<S, F = FeatureError> =
-  | {
-      success: true;
-      feature: FeatureName;
-      out: S;
-    }
-  | {
-      success: false;
-      feature: FeatureName;
-      out: F;
-    };
+  PrimitiveFeatureSuccess<S> | PrimitiveFeatureError<F>;
 
 /**
  * Output of using an app-only feature (i.e., one that isn’t usable through API, just the Discord client). This means it can (and will) return a `ContainerBuilder` as the success output.

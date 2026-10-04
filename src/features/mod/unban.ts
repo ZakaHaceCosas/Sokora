@@ -1,39 +1,41 @@
-import type { User } from "discord.js";
-import { useErrorEmbed } from "embeds/errorEmbed";
-import { hasModError, modEmbed } from "embeds/modEmbed";
-import type { SafeChatInteraction } from "types";
+import type { Guild, User } from "discord.js";
+import { getModError } from "embeds/modEmbed";
+import type { FeatureOutput } from "types";
+import { errorToFeature } from "utils/errorType";
+import { feature, type MethodParameters } from "utils/feature";
 
-export async function unban(
-  interaction: SafeChatInteraction,
-  options: {
-    user: User;
-    reason: string | null;
-    isSilent: boolean;
-  },
-): Promise<void> {
-  const { user, reason, isSilent } = options;
+interface P {
+  guild: Guild;
+  target: User;
+  reason: string | null;
+}
 
-  if (
-    await hasModError("Ban Members", {
-      interaction,
-      user,
-      action: "Unban",
-      errorOptions: { allErrors: false, botError: true, banCheckError: true },
-    })
-  )
-    return;
+interface O {
+  title: string;
+  reason: string | null;
+}
+
+async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOutput<O>> {
+  const [ok, fail, options] = parameters;
+  const { target, reason, guild } = options;
+
+  const error = await getModError("BanMembers", {
+    target,
+    action: "UNBAN",
+    errorOptions: { allErrors: false, botError: true, banCheckError: true },
+  });
+
+  if (error) return fail(errorToFeature(error));
 
   try {
-    await interaction.guild?.members.unban(user.id, reason ?? undefined);
-    return await modEmbed({
-      interaction,
-      user,
-      action: "Unbanned",
-      dbAction: "UNBAN",
+    await guild.members.unban(target.id, reason ?? undefined);
+    return ok({
+      title: "Unbanned user.",
       reason,
-      isSilent,
     });
   } catch (error) {
-    await useErrorEmbed({ interaction, error, fileName: "unban" });
+    return fail(errorToFeature(error));
   }
 }
+
+export const unban = feature("mod/unban", method);

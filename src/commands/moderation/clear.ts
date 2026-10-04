@@ -5,9 +5,10 @@ import {
   type InteractionResponse,
   type Message,
 } from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
-import { clear } from "src/features/mod/clear";
-import { assertInteraction } from "src/types";
+import { useErrorEmbed } from "embeds/errorEmbed";
+import { buildModEmbed } from "embeds/modEmbed";
+import { clear } from "features/mod/clear";
+import { assertInteraction } from "types";
 import { safeChannel } from "utils/safeThings";
 
 export const data = new SlashCommandSubcommandBuilder()
@@ -34,6 +35,9 @@ export const data = new SlashCommandSubcommandBuilder()
   })
   .addUserOption(user =>
     user.setName("user").setDescription("Only clear messages from this specific user."),
+  )
+  .addUserOption(user =>
+    user.setName("reason").setDescription("The reason for clearing the messages."),
   );
 
 export async function run(
@@ -41,13 +45,14 @@ export async function run(
 ): Promise<Message | InteractionResponse | undefined> {
   assertInteraction(interaction);
 
+  const reason = interaction.options.getString("reason");
   const channelOption = interaction.options.getChannel("channel");
   let channel = await safeChannel(interaction.guild, interaction.channel.id);
   if (channelOption) channel = await safeChannel(interaction.guild, channelOption.id);
 
   const amount = interaction.options.getNumber("amount");
   if (!amount)
-    return await errorEmbed({
+    return await useErrorEmbed({
       interaction,
       title: "No amount provided.",
       reason:
@@ -56,14 +61,31 @@ export async function run(
 
   const targetUser = interaction.options.getUser("user") ?? undefined;
   if (!channel.isTextBased() || channel.isDMBased())
-    return await errorEmbed({
+    return await useErrorEmbed({
       interaction,
       title: "You have provided a channel that can’t have messages to clear.",
     });
 
-  return await clear(interaction, {
+  const out = await clear({
     targetUser,
     amount,
+    reason,
     channel,
+  });
+
+  if (!out.success) {
+    return await useErrorEmbed({
+      interaction,
+      title: out.out.title,
+      reason: out.out.reason ?? undefined,
+    });
+  }
+
+  return await interaction.reply({
+    components: [
+      // TODO: this should be a ModActionResult or smth
+      // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      await buildModEmbed(out.out),
+    ],
   });
 }

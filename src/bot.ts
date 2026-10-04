@@ -24,7 +24,7 @@ import type { GHCommit } from "types";
 import { rescheduleUnbans } from "utils/unbanScheduler";
 import { server } from "api/v1/http";
 
-export let client: Client;
+export let client: Client<true>;
 
 const LOG_FILE = "/app/logs/lifecycle.log";
 const CANARY_MSG_BATCH_SIZE = 25;

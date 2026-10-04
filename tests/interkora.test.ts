@@ -4,7 +4,7 @@ import { generateMessage } from "./utilities";
 import { setSetting } from "database/settings";
 import { DEV_GUILD_ID } from "const";
 import { buildPayloadFromMessage } from "api/v1/message";
-import { client } from "src/bot";
+import { client } from "botfile";
 
 beforeAll(async () => {
   await setSetting(DEV_GUILD_ID, "interkora", "enabled", true);

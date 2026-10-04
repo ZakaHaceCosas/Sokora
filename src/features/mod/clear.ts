@@ -7,49 +7,51 @@ import type {
   User,
   VoiceChannel,
 } from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
-import { hasModError, modEmbed } from "embeds/modEmbed";
-import type { SafeChatInteraction } from "src/types";
+import { getModError } from "embeds/modEmbed";
+import type { FeatureOutput } from "types";
+import { errorToFeature } from "utils/errorType";
+import { feature, type MethodParameters } from "utils/feature";
 import { mention } from "utils/mention";
 import { pluralOrNot } from "utils/pluralOrNot";
 
-export async function clear(
-  interaction: SafeChatInteraction,
-  options: {
-    channel:
-      | NewsChannel
-      | StageChannel
-      | TextChannel
-      | PublicThreadChannel
-      | PrivateThreadChannel
-      | VoiceChannel;
-    amount: number;
-    targetUser: User | undefined;
-  },
-) {
-  const { channel, amount, targetUser } = options;
+interface P {
+  channel:
+    | NewsChannel
+    | StageChannel
+    | TextChannel
+    | PublicThreadChannel
+    | PrivateThreadChannel
+    | VoiceChannel;
+  reason: string | null;
+  amount: number;
+  targetUser: User | undefined;
+}
 
-  if (
-    await hasModError("Manage Messages", {
-      interaction,
-      channel: channel?.id,
-      errorOptions: { allErrors: false, botError: true, channelError: true },
-    })
-  )
-    return;
+interface O {
+  title: string;
+  reason: string | null;
+}
+
+async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOutput<O>> {
+  const [ok, fail, options] = parameters;
+  const { channel, amount, targetUser, reason } = options;
+
+  const error = await getModError("ManageMessages", {
+    channel,
+    errorOptions: { allErrors: false, botError: true, channelError: true },
+  });
+
+  if (error) return fail(errorToFeature(error));
 
   if (amount > 100)
-    return await errorEmbed({
-      interaction,
+    return fail({
       title: "You can only clear up to 100 messages at a time.",
     });
 
-  if (amount < 1)
-    return await errorEmbed({ interaction, title: "You must clear at least 1 message." });
+  if (amount < 1) return fail({ title: "You must clear at least 1 message." });
 
   if (!channel.isTextBased() || channel.isDMBased())
-    return await errorEmbed({
-      interaction,
+    return fail({
       title: "You have provided a channel that can’t have messages to clear.",
     });
 
@@ -62,8 +64,7 @@ export async function clear(
         .first(amount);
 
       if (userMessages.length === 0)
-        return await errorEmbed({
-          interaction,
+        return fail({
           title: "No messages found.",
           reason: "No messages from this user were found in the recent history.",
         });
@@ -74,27 +75,19 @@ export async function clear(
       await channel.bulkDelete(amount, true).then(messages => (deletedAmount = messages.size));
 
       if (deletedAmount == 0)
-        return await errorEmbed({
-          interaction,
+        return fail({
           title: "No messages found.",
           reason: "No messages were found in the recent history.",
         });
     }
   } catch (error) {
-    return await errorEmbed({
-      interaction,
-      error,
-      forward: true,
-      fileName: "clear",
-    });
+    return fail(errorToFeature(error));
   }
 
-  await modEmbed({
-    interaction,
-    user: targetUser,
-    channel: channel.id,
-    customText: {
-      logTitle: `Cleared ${deletedAmount} ${pluralOrNot("message", deletedAmount)}${targetUser ? ` from ${mention(targetUser.id, "USER")}` : ""}`,
-    },
+  return ok({
+    title: `Cleared ${deletedAmount} ${pluralOrNot("message", deletedAmount)}${targetUser ? ` from ${mention(targetUser.id, "USER")}` : ""}`,
+    reason,
   });
 }
+
+export const clear = feature("mod/clear", method);

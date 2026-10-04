@@ -563,7 +563,7 @@ export async function resolveEntity(
   const avatarURL =
     (member instanceof Webhook ? member.avatarURL() : member.displayAvatarURL()) ?? undefined;
   const userId = typeof member === "string" ? member : member.id;
-  const hasAdminPermission =
+  const hasAdminPermission: boolean =
     member instanceof Webhook ? false : member.permissions.has("Administrator");
   const correspondingWhitelist = member instanceof Webhook ? "webhook_whitelist" : "whitelist";
 
