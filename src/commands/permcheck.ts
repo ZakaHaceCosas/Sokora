@@ -1,6 +1,7 @@
 import {
   ContainerBuilder,
   GuildMember,
+  InteractionContextType,
   PermissionFlagsBits,
   PermissionsBitField,
   SlashCommandBuilder,
@@ -77,7 +78,7 @@ function getRoleError(
 export const data = new SlashCommandBuilder()
   .setName("permcheck")
   .setDescription("Shows information about Sokora.")
-  .setContexts(0)
+  .setContexts(InteractionContextType.Guild)
   .addUserOption(user => {
     return user
       .setName("user")

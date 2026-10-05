@@ -7,45 +7,41 @@ import {
   type Message,
   TextDisplayBuilder,
 } from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
-import { logEmbed } from "embeds/logEmbed";
 import { channelCheck, hasChannelPerms } from "utils/channelCheck";
 import { colorize, Sokolors } from "utils/colorize";
 import { mention } from "utils/mention";
 import { safeChannel, safeUser } from "utils/safeThings";
 import type { Event } from "types";
+import { useLogEmbed } from "embeds/logEmbed";
+import { useErrorEmbed } from "embeds/errorEmbed";
 
 export default (async function run(reaction, user) {
   const client = user.client;
-  const guildID = reaction.message.guildId;
+  const reactionGuild = reaction.message.guild;
+  if (!reactionGuild || !(await getSetting(reactionGuild.id, "starboard", "enabled"))) return;
   const channelID = reaction.message.channelId;
   const errorExtras = {
-    guild: guildID,
+    guild_id: reactionGuild.id,
     channel: channelID,
     message: reaction.message.id,
     user: user.id,
   };
 
-  if (!guildID || !(await getSetting(guildID, "starboard", "enabled"))) return;
-
   if (!hasChannelPerms(reaction.message.channel, "ReadMessageHistory"))
-    return logEmbed({
-      client,
-      guildID,
-      title: "Sokora is missing permissions",
-      description: `The channel <#${channelID}> does not allow Sokora to \`Read message history\`, starboard will not work in this channel until fixed`,
-    });
+    return useLogEmbed(
+      reactionGuild,
+      "Sokora is missing permissions",
+      `The channel <#${channelID}> does not allow Sokora to \`Read message history\`, starboard will not work in this channel until fixed`,
+    );
 
   if (reaction.partial)
     try {
       await reaction.fetch();
     } catch (error) {
-      return await errorEmbed({
+      return await useErrorEmbed({
         client,
         error,
         title: "Error fetching reaction.",
-        log: true,
-        forward: true,
         fileName: "messageReactionRemove",
         extras: errorExtras,
       });
@@ -55,12 +51,10 @@ export default (async function run(reaction, user) {
     try {
       await safeUser(client, user.id);
     } catch (error) {
-      await errorEmbed({
+      await useErrorEmbed({
         client,
         error,
         title: "Error fetching user.",
-        log: true,
-        forward: true,
         fileName: "messageReactionRemove",
         extras: errorExtras,
       });
@@ -69,18 +63,17 @@ export default (async function run(reaction, user) {
   try {
     await reaction.message.fetch();
   } catch (error) {
-    await errorEmbed({
+    await useErrorEmbed({
       client,
       error,
       title: "Error fetching message.",
-      log: true,
-      forward: true,
       fileName: "messageReactionRemove",
       extras: errorExtras,
     });
   }
 
   const message = reaction.message as Message;
+  // TODO (and considering reactionGuild), review this code a little more
   const { guild, author, content, createdAt, url, id, attachments } = message;
   if (!guild) return;
 
@@ -169,12 +162,10 @@ export default (async function run(reaction, user) {
       new Date(message.createdTimestamp),
     );
   } catch (error) {
-    await errorEmbed({
+    await useErrorEmbed({
       client,
       error,
       title: "Error handling starboard message.",
-      log: true,
-      forward: true,
       fileName: "messageReactionRemove",
       extras: errorExtras,
     });

@@ -1,7 +1,7 @@
 import { listUserCases, removeCase } from "database/moderation";
 import type { Guild, User } from "discord.js";
 import { getModError } from "embeds/modEmbed";
-import type { FeatureOutput } from "types";
+import type { FeatureOutput, ModActionResult } from "types";
 import { errorToFeature } from "utils/errorType";
 import { feature, type MethodParameters } from "utils/feature";
 import { mention } from "utils/mention";
@@ -12,16 +12,14 @@ interface P {
   guild: Guild;
   isSilent: boolean;
   warnId: number;
-}
-
-interface O {
-  title: string;
   reason: string | null;
 }
 
-async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOutput<O>> {
+async function method(
+  ...parameters: MethodParameters<P, ModActionResult>
+): Promise<FeatureOutput<ModActionResult>> {
   const [ok, fail, options] = parameters;
-  const { target, warnId, guild } = options;
+  const { target, warnId, guild, reason, moderator, isSilent } = options;
 
   const error = await getModError("ModerateMembers", {
     target,
@@ -50,7 +48,14 @@ async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOut
     title: `Removed a warning from ${mention(target.id, "USER")}`,
     // dmTitle: "Your warning has been removed",
     //    isSilent,
-    reason: null,
+    reason,
+    moderator,
+    guild,
+    target,
+    action: "DELWARN" as "WARN",
+    error: null,
+    caseId: warnId,
+    isSilent,
   });
 }
 

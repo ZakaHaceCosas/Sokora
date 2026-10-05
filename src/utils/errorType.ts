@@ -1,5 +1,4 @@
-import { isModErroryResult, ModErrorCode, type ModActionResult } from "embeds/modEmbed";
-import type { FeatureError } from "types";
+import { isModErroryResult, ModErrorCode, type FeatureError, type ModActionResult } from "types";
 
 /**
  * Gives you an error with the Error type.
@@ -26,8 +25,10 @@ function exceptionToFeatureError(value: unknown): FeatureError {
   };
 }
 
-function modErrorToFeatureError(value: ModActionResult & { success: false }): FeatureError {
+function modErrorToFeatureError(value: ModActionResult): FeatureError {
   const { target, action, error } = value;
+
+  if (!error) throw new Error("modErrorToFeatureError called with no error.");
 
   if (Error.isError(error)) {
     return exceptionToFeatureError(error);

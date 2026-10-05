@@ -10,7 +10,6 @@ import { buildModEmbed } from "embeds/modEmbed";
 import { clear } from "features/mod/clear";
 import { assertInteraction } from "types";
 import { safeChannel } from "utils/safeThings";
-import { shouldModerateSilently } from "utils/silent";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("clear")

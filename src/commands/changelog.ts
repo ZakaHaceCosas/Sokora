@@ -3,6 +3,7 @@ import {
   ButtonBuilder,
   ButtonStyle,
   ContainerBuilder,
+  InteractionContextType,
   SeparatorBuilder,
   SlashCommandBuilder,
   TextDisplayBuilder,
@@ -19,7 +20,7 @@ import { getChangelog, getVersions } from "../utils/changelog";
 export const data = new SlashCommandBuilder()
   .setName("changelog")
   .setDescription("Shows Sokora’s changelog.")
-  .setContexts(0);
+  .setContexts(InteractionContextType.Guild);
 
 type Label = "Added" | "Changed" | "Fixed" | "Removed";
 

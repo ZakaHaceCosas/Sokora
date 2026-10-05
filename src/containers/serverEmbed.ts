@@ -16,8 +16,8 @@ import { pagedButtons } from "utils/pagination";
 import { colorize, Sokolors } from "utils/colorize";
 import { pluralOrNot } from "utils/pluralOrNot";
 import { IS_CANARY } from "const";
-import { lightErrorEmbed } from "./errorEmbed";
 import { getServerboardEntry, type ServerboardOptions } from "database/serverboard";
+import { buildLogEmbed } from "./logEmbed";
 
 /**
  * Gives you a CONTAINER containing information about the guild.
@@ -107,7 +107,7 @@ export async function serverEmbed(options: ServerboardOptions): Promise<Containe
   ): Promise<ContainerBuilder> {
     await resetSetting(guild.id, "serverboard", "server_invite");
     await resetSetting(guild.id, "serverboard", "invite_channel");
-    const errorContainer = await lightErrorEmbed(
+    const errorContainer = await buildLogEmbed(
       guild,
       "Serverboard is misconfigured in your server!",
       [

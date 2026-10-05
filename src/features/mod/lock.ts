@@ -1,7 +1,7 @@
 import { createCase } from "database/moderation";
 import type { Channel, Guild, User } from "discord.js";
 import { getModError } from "embeds/modEmbed";
-import type { FeatureOutput } from "types";
+import type { FeatureOutput, ModActionResult } from "types";
 import { errorToFeature } from "utils/errorType";
 import { feature, type MethodParameters } from "utils/feature";
 
@@ -9,16 +9,12 @@ interface P {
   channel: Channel;
   moderator: User;
   guild: Guild;
-  isSilent: boolean;
-  reason: string;
-}
-
-interface O {
-  title: string;
   reason: string | null;
 }
 
-async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOutput<O>> {
+async function method(
+  ...parameters: MethodParameters<P, ModActionResult>
+): Promise<FeatureOutput<ModActionResult>> {
   const [ok, fail, options] = parameters;
   const { channel, reason, guild, moderator } = options;
 
@@ -44,7 +40,7 @@ async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOut
     // TODO (for all features)
     // promise.all everywhere
     // createCase everywhere
-    await Promise.all([
+    const [, caseId] = await Promise.all([
       channel.permissionOverwrites.create(guild.id, {
         SendMessages: false,
         SendMessagesInThreads: false,
@@ -54,7 +50,16 @@ async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOut
       createCase(guild, channel, "LOCK", moderator, reason),
     ]);
 
-    return ok({ title: "Locked a channel", reason });
+    return ok({
+      title: "Locked a channel",
+      reason,
+      caseId,
+      error: null,
+      moderator,
+      guild,
+      action: "LOCK",
+      target: channel,
+    });
   } catch (error) {
     return fail(errorToFeature(error));
   }

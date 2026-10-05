@@ -2,27 +2,25 @@ import { createCase } from "database/moderation";
 import type { Channel, Guild, User } from "discord.js";
 import { getModError } from "embeds/modEmbed";
 import ms from "enhanced-ms";
-import type { FeatureOutput } from "types";
+import type { FeatureOutput, ModActionResult } from "types";
 import { MILLISEC_6H } from "utils/constants";
 import { errorToFeature } from "utils/errorType";
 import { feature, type MethodParameters } from "utils/feature";
 
 interface P {
   guild: Guild;
+  isSilent: boolean;
   moderator: User;
   timeMillisec: number;
   reason: string | null;
   channel: Channel;
 }
 
-interface O {
-  title: string;
-  reason: string | null;
-}
-
-async function work(...parameters: MethodParameters<P, O>): Promise<FeatureOutput<O>> {
+async function method(
+  ...parameters: MethodParameters<P, ModActionResult>
+): Promise<FeatureOutput<ModActionResult>> {
   const [ok, fail, options] = parameters;
-  const { timeMillisec, reason, channel, guild, moderator } = options;
+  const { timeMillisec, reason, channel, guild, moderator, isSilent } = options;
 
   const error = await getModError("ManageChannels", {
     channel,
@@ -42,14 +40,20 @@ async function work(...parameters: MethodParameters<P, O>): Promise<FeatureOutpu
     });
 
   await channel.setRateLimitPerUser(timeMillisec / 1000, reason ?? undefined);
-  await createCase(guild, channel, "SLOWDOWN", moderator, reason);
+  const caseId = await createCase(guild, channel, "SLOWDOWN", moderator, reason);
 
   return ok({
     title: timeMillisec
       ? `Set the slowdown to ${ms(timeMillisec, "fullPrecision")}`
       : "Removed the slowdown",
     reason,
+    isSilent,
+    moderator,
+    guild,
+    error: null,
+    action: "SLOWDOWN",
+    caseId,
   });
 }
 
-export const slowdown = feature("mod/slowdown", work);
+export const slowdown = feature("mod/slowdown", method);

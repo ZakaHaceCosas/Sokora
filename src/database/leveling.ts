@@ -86,7 +86,7 @@ type LevelReward$Less = Omit<LevelReward, "$">;
 
 export async function getLevelRewards(guildID: string): Promise<LevelReward[]> {
   const rewards = await getSetting(guildID, "leveling", "rewards");
-  return rewards ? rewards : [];
+  return rewards ?? [];
 }
 
 /**

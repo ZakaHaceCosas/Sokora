@@ -3,6 +3,7 @@ import {
   ButtonBuilder,
   ButtonStyle,
   ContainerBuilder,
+  InteractionContextType,
   MediaGalleryBuilder,
   MediaGalleryItemBuilder,
   SlashCommandBuilder,
@@ -18,7 +19,7 @@ import type { GHCommit } from "types";
 export const data = new SlashCommandBuilder()
   .setName("about")
   .setDescription("Shows information about Sokora.")
-  .setContexts(0);
+  .setContexts(InteractionContextType.Guild);
 
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   const client = interaction.client;

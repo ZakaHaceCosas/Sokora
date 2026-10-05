@@ -7,17 +7,15 @@ import {
   GuildVerificationLevel,
   type Client,
   type Guild,
-  type InteractionResponse,
-  type Message,
 } from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
-import { client } from "src/bot";
+import { client } from "botfile";
 import { db, values } from "database/index";
 import { getSetting } from "database/settings";
 import { safeChannel, safeGuild, safeMember } from "utils/safeThings";
 import { IS_CANARY } from "const";
 import { as } from "types";
 import { mention } from "utils/mention";
+import { useErrorEmbed } from "embeds/errorEmbed";
 
 export interface ServerboardOptions {
   guild: Guild;
@@ -220,17 +218,13 @@ async function listPublicServers(): Promise<
   );
 }
 
-async function deletePublicServer(
-  guildID: string,
-): Promise<Message | InteractionResponse | undefined> {
+async function deletePublicServer(guildID: string): Promise<void> {
   try {
     await db`DELETE FROM settings WHERE "guildID" = ${guildID} AND "key" = ${"serverboard.shown"} AND "value" = ${"true"};`;
   } catch (error) {
-    return await errorEmbed({
+    return await useErrorEmbed({
       client,
       error,
-      log: true,
-      forward: true,
       fileName: "database/settings",
     });
   }

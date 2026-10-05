@@ -1,47 +1,54 @@
 import { createCase, getPendingBans } from "database/moderation";
-import { type Client, ContainerBuilder, type Guild, TextDisplayBuilder } from "discord.js";
+import {
+  type Client,
+  ContainerBuilder,
+  type Guild,
+  TextDisplayBuilder,
+  type User,
+} from "discord.js";
 import { useErrorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "./colorize";
 import { logChannel } from "./logChannel";
 import { safeGuild } from "./safeThings";
 import { mention } from "./mention";
 import { MILLISEC_1H } from "./constants";
+import { client } from "botfile";
 
 const scheduledUnbans = new Map<string, Timer>();
 
 async function unbanUser(
-  client: Client,
   guild: Guild,
-  userId: string,
-  modId: string,
+  target_id: string,
+  moderator_id: string,
   caseId?: number,
 ): Promise<void> {
-  let user;
+  let target: User;
   try {
-    user = (await guild.bans.fetch(userId)).user;
+    target = (await guild.bans.fetch(target_id)).user;
   } catch {
     return await useErrorEmbed({
       client,
-      title: `Failed to unban user ${userId} in guild ${guild.id}.`,
+      title: `Failed to unban user ${target_id} in guild ${guild.id}.`,
       reason: "User not found in the guild’s ban list.",
       fileName: "unbanScheduler",
     });
   }
 
   caseId ??= (await getPendingBans(Date.now() - MILLISEC_1H)).find(
-    ban => ban.user_id == userId,
+    ban => ban.user_id == target.id,
   )?.id;
-  const unbanReason = `Temporary ban by <@${modId}> has expired (cf. case ${caseId})`;
+  const unbanReason = `Temporary ban by <@${moderator_id}> has expired (cf. case ${caseId})`;
   // idk how can client.user be null but ok - @Golem642
-  // client can be accessed before running Client#login(), in which case user IS null - @zakahacecosas
-  await createCase(guild.id, userId, "UNBAN", client.user?.id ?? modId, unbanReason);
+  // client can be accessed before running Client#login(), in which case user IS null
+  // anyways this was never the case so i fixed the type - @zakahacecosas
+  await createCase(guild, target, "UNBAN", client.user, unbanReason);
 
-  await guild.members.unban(user.id, unbanReason);
+  await guild.members.unban(target.id, unbanReason);
   const container = new ContainerBuilder()
     .addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`## Unbanned ${mention(user.id, "USER")}`),
+      new TextDisplayBuilder().setContent(`## Unbanned ${mention(target.id, "USER")}`),
       new TextDisplayBuilder().setContent(unbanReason),
-      new TextDisplayBuilder().setContent(`-# User ID: ${user.id}`),
+      new TextDisplayBuilder().setContent(`-# User ID: ${target.id}`),
     )
     .setAccentColor(await colorize({ hue: Sokolors.Green }));
 
@@ -51,24 +58,23 @@ async function unbanUser(
 export function scheduleUnban(
   client: Client,
   guild: Guild,
-  userID: string,
-  modID: string,
+  user_id: string,
+  moderator_id: string,
   delay: number,
   caseId?: number,
 ): Map<string, Timer> {
-  const guildID = guild.id;
-  const key = `${guildID}-${userID}`;
+  const key = `${guild.id}-${user_id}`;
   if (scheduledUnbans.has(key)) clearTimeout(scheduledUnbans.get(key));
 
   const timeout = setTimeout(
     async () => {
       try {
-        await unbanUser(client, guild, userID, modID, caseId);
+        await unbanUser(guild, user_id, moderator_id, caseId);
       } catch (error) {
         await useErrorEmbed({
           client,
           error,
-          title: `Failed to unban user ${userID} in guild ${guildID}.`,
+          title: `Failed to unban user ${user_id} in guild ${guild.id}.`,
 
           fileName: "unbanScheduler",
         });
@@ -107,7 +113,7 @@ export async function rescheduleUnbans(client: Client): Promise<void> {
         scheduleUnban(client, guildBan.guild, ban.user_id, ban.moderator_id, delay, ban.id);
       else
         try {
-          await unbanUser(client, guildBan.guild, ban.user_id, ban.moderator_id, ban.id);
+          await unbanUser(guildBan.guild, ban.user_id, ban.moderator_id, ban.id);
         } catch (error) {
           await useErrorEmbed({
             client,

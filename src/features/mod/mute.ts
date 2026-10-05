@@ -1,7 +1,7 @@
 import { createCase } from "database/moderation";
 import type { Guild, User } from "discord.js";
 import { getModError } from "embeds/modEmbed";
-import type { FeatureOutput } from "types";
+import type { FeatureOutput, ModActionResult } from "types";
 import { MILLISEC_28D } from "utils/constants";
 import { errorToFeature } from "utils/errorType";
 import { feature, type MethodParameters } from "utils/feature";
@@ -11,18 +11,16 @@ interface P {
   guild: Guild;
   durationMillisec: number;
   reason: string | null;
+  isSilent: boolean;
   moderator: User;
   target: User;
 }
 
-interface O {
-  title: string;
-  reason: string | null;
-}
-
-async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOutput<O>> {
+async function method(
+  ...parameters: MethodParameters<P, ModActionResult>
+): Promise<FeatureOutput<ModActionResult>> {
   const [ok, fail, options] = parameters;
-  const { moderator, guild, target, durationMillisec, reason } = options;
+  const { moderator, guild, target, durationMillisec, isSilent, reason } = options;
 
   const error = await getModError("ModerateMembers", {
     target,
@@ -52,10 +50,16 @@ async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOut
     await (
       await safeMember(guild, target.id)
     )?.edit({ communicationDisabledUntil: time, reason: reason ?? undefined });
-    await createCase(guild, target, "MUTE", moderator, reason);
+    const caseId = await createCase(guild, target, "MUTE", moderator, reason);
     return ok({
       title: `Muted ${target.username}.`,
       reason,
+      caseId,
+      isSilent,
+      moderator,
+      guild,
+      action: "MUTE",
+      error: null,
     });
   } catch (error) {
     return fail(errorToFeature(error));

@@ -26,11 +26,9 @@ interface P {
   delMessageSeconds: number | undefined;
 }
 
-// TODO: (for all type O other than this)
-// make it return all data needed for a modEmbed, even if user provided already
-type O = ModActionResult & { success: true };
-
-async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOutput<O>> {
+async function method(
+  ...parameters: MethodParameters<P, ModActionResult>
+): Promise<FeatureOutput<ModActionResult>> {
   const [ok, fail, options] = parameters;
   const { guild, target, isSilent, moderator, durationMillisec, reason, delMessageSeconds } =
     options;
@@ -61,7 +59,7 @@ async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOut
       scheduleUnban(client, guild, target.id, moderator.id, durationMillisec, caseId);
 
     return ok({
-      success: true,
+      error: null,
       target,
       guild,
       moderator,

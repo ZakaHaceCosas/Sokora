@@ -60,8 +60,7 @@ export async function channelCheck<K extends keyof TS>(options: {
   if (permType == "Send") permissions.push("ViewChannel", "SendMessages");
 
   const perms = channel.permissionsFor(channel.client.user);
-  if (!perms) return await reset();
-  return permissions.every(p => perms.has(p)) ? true : await reset();
+  return perms && permissions.every(p => perms.has(p)) ? true : await reset();
 }
 
 /** Checks if the bot has the specified permissions in a given guild channel

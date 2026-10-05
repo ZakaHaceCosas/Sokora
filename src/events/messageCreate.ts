@@ -19,8 +19,6 @@ import {
   ThumbnailBuilder,
   type User,
 } from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
-import { logEmbed } from "embeds/logEmbed";
 import { easterEggs } from "handlers/events";
 import { channelCheck, hasChannelPerms } from "utils/channelCheck";
 import { colorize, Sokolors } from "utils/colorize";
@@ -29,6 +27,8 @@ import { safeChannel, safeMember, safeMessage, safeRole } from "utils/safeThings
 import { interkora } from "api/v1";
 import { assertMessage, type Event } from "types";
 import { buildMessageFromPayload, buildPayloadFromMessage } from "api/v1/message";
+import { useErrorEmbed } from "embeds/errorEmbed";
+import { useLogEmbed } from "embeds/logEmbed";
 
 const cooldowns = new Map<string, number>();
 
@@ -103,23 +103,20 @@ export default (async function run(_message) {
             if (typeof easterEgg.run == "function" && Math.random() <= chances)
               await easterEgg.run(message);
           } catch (error) {
-            return await errorEmbed({
+            return await useErrorEmbed({
               client,
               error,
               title: `Error running easter egg ${easterEgg.name}.`,
-              log: true,
-              forward: true,
               fileName: "messageCreate",
             });
           }
         }
       else
-        await logEmbed({
-          client,
-          guildID: guild.id,
-          title: "Sokora is missing permissions",
-          description: `Easter eggs are enabled in <#${message.channel.id}> but Sokora is missing the \`Send messages\` or \`Read message history\` permissions.\nPlease fix it or remove this channel from the easter egg’s allowed channels`,
-        });
+        await useLogEmbed(
+          guild,
+          "Sokora is missing permissions",
+          `Easter eggs are enabled in <#${message.channel.id}> but Sokora is missing the \`Send messages\` or \`Read message history\` permissions.\nPlease fix it or remove this channel from the easter egg’s allowed channels`,
+        );
   }
 
   if (!(await getSetting(guild.id, "leveling", "enabled"))) return;
@@ -169,7 +166,7 @@ export default (async function run(_message) {
     for (const reward of rewards) {
       if (reward.roles && reward.roles.length > 0 && !clientMember.permissions.has("ManageRoles")) {
         await removeLevelRewards(guild.id, [reward]);
-        return await errorEmbed({
+        return await useErrorEmbed({
           client,
           title: "A level reward has been removed.",
           reason: `The bot is missing the **Manage Roles** permission.\n**Removed level reward**: ${reward.roles.map(id => id && mention(id, "ROLE")).join(", ")} at level ${reward.level}`,
@@ -183,7 +180,9 @@ export default (async function run(_message) {
         !clientMember.permissions.has("ManageChannels")
       ) {
         await removeLevelRewards(guild.id, [reward]);
-        return await errorEmbed({
+        // TODO: now i realized why log/forward were options...
+        // I HATE MYSELF AND HOW STUPID I AM
+        return await useErrorEmbed({
           client,
           title: "A level reward has been removed.",
           reason: `The bot is missing the **Manage Channels** permission.\n**Removed level reward**: ${reward.channels.map(id => id && mention(id, "CHANNEL")).join(", ")} at level ${reward.level}`,
@@ -202,32 +201,32 @@ export default (async function run(_message) {
       );
     }
 
-  if (levelChannelId) {
-    const container = new ContainerBuilder()
-      .addSectionComponents(
-        new SectionBuilder()
-          .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(`## ${mention(author.id, "USER")} has leveled up!`),
-            new TextDisplayBuilder().setContent(
-              [
-                ...messageContent,
-                `You need **${(await getXpForNextLevel(guild.id, author.id)).toLocaleString("en-US")}** XP to level up again.`,
-              ].join("\n"),
-            ),
-          )
-          .setThumbnailAccessory(new ThumbnailBuilder().setURL(avatar)),
-      )
-      .setAccentColor(await colorize({ user: author, avatar, hue: Sokolors.Green }));
+  if (!levelChannelId) return;
 
-    const channel = (await safeChannel(guild, levelChannelId)) as TextChannel;
-    if (
-      await channelCheck({
-        channel,
-        guild,
-        permType: "Send",
-        setting: { category: "leveling", setting: "channel" },
-      })
+  const container = new ContainerBuilder()
+    .addSectionComponents(
+      new SectionBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(`## ${mention(author.id, "USER")} has leveled up!`),
+          new TextDisplayBuilder().setContent(
+            [
+              ...messageContent,
+              `You need **${(await getXpForNextLevel(guild.id, author.id)).toLocaleString("en-US")}** XP to level up again.`,
+            ].join("\n"),
+          ),
+        )
+        .setThumbnailAccessory(new ThumbnailBuilder().setURL(avatar)),
     )
-      await channel.send({ components: [container], flags: "IsComponentsV2" });
-  }
+    .setAccentColor(await colorize({ user: author, avatar, hue: Sokolors.Green }));
+
+  const channel = (await safeChannel(guild, levelChannelId)) as TextChannel;
+  if (
+    await channelCheck({
+      channel,
+      guild,
+      permType: "Send",
+      setting: { category: "leveling", setting: "channel" },
+    })
+  )
+    await channel.send({ components: [container], flags: "IsComponentsV2" });
 } as Event<"messageCreate">);

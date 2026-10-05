@@ -1,8 +1,8 @@
-import { errorEmbed } from "embeds/errorEmbed";
-import { client } from "src/bot";
+import { client } from "botfile";
 import type { Satisfies } from "types";
 import { db, values } from ".";
 import type { TableDefinition, TypeOfDefinition } from "types";
+import { useErrorEmbed } from "embeds/errorEmbed";
 
 type Def = Satisfies<
   TableDefinition,
@@ -54,18 +54,13 @@ export async function setStarred(
   });
 }
 
-export async function deleteStarred(
-  guildID: string,
-  messageID: string,
-): Promise<Awaited<ReturnType<typeof errorEmbed>>> {
+export async function deleteStarred(guildID: string, messageID: string): Promise<void> {
   try {
     await db`DELETE FROM starboard WHERE "guild_id" = ${guildID} AND "message_id" = ${messageID}`;
   } catch (error) {
-    return await errorEmbed({
+    return await useErrorEmbed({
       client,
       error,
-      log: true,
-      forward: true,
       fileName: "database/starboard",
     });
   }

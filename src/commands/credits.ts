@@ -3,6 +3,7 @@ import {
   ButtonBuilder,
   ButtonStyle,
   ContainerBuilder,
+  InteractionContextType,
   SlashCommandBuilder,
   TextDisplayBuilder,
   type ButtonInteraction,
@@ -17,7 +18,7 @@ import { safeEdit } from "utils/safeThings";
 export const data = new SlashCommandBuilder()
   .setName("credits")
   .setDescription("Lists everyone who contributed to Sokora.")
-  .setContexts(0);
+  .setContexts(InteractionContextType.Guild);
 
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   const user = interaction.client.user;

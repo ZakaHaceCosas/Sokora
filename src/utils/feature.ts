@@ -6,7 +6,7 @@ import type {
 } from "types";
 
 type MethodType<P, O> = (
-  ok: <S>(s: S) => PrimitiveFeatureSuccess<S>,
+  ok: (s: O) => PrimitiveFeatureSuccess<O>,
   fail: <F>(f: F) => PrimitiveFeatureError<F>,
   options: P,
 ) => Promise<FeatureOutput<O>>;

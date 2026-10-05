@@ -1,12 +1,9 @@
-import {
-  SlashCommandSubcommandBuilder,
-  type ChatInputCommandInteraction,
-  type InteractionResponse,
-  type Message,
-} from "discord.js";
+import { SlashCommandSubcommandBuilder, type ChatInputCommandInteraction } from "discord.js";
 import { assertInteraction } from "types";
 import { shouldModerateSilently } from "utils/silent";
-import { kick } from "src/features/mod/kick";
+import { kick } from "features/mod/kick";
+import { useErrorEmbed } from "embeds/errorEmbed";
+import { buildModEmbed } from "embeds/modEmbed";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("kick")
@@ -23,18 +20,29 @@ export const data = new SlashCommandSubcommandBuilder()
       );
   });
 
-export async function run(
-  interaction: ChatInputCommandInteraction,
-): Promise<Message | InteractionResponse | undefined> {
+export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   assertInteraction(interaction);
 
-  const user = interaction.options.getUser("user", true);
+  const target = interaction.options.getUser("user", true);
   const reason = interaction.options.getString("reason");
+
   const isSilent = await shouldModerateSilently(interaction);
 
-  return await kick(interaction, {
-    user,
+  const result = await kick({
+    target,
     isSilent,
     reason,
+    moderator: interaction.user,
+    guild: interaction.guild,
   });
+
+  if (result.success)
+    await interaction.reply({
+      flags: isSilent ? ["IsComponentsV2", "Ephemeral"] : "IsComponentsV2",
+      components: [await buildModEmbed(result.out)],
+    });
+  else {
+    await useErrorEmbed({ interaction, ...result.out });
+  }
+  return;
 }

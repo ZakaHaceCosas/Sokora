@@ -2,13 +2,12 @@ import {
   ChannelType,
   SlashCommandSubcommandBuilder,
   type ChatInputCommandInteraction,
-  type InteractionResponse,
-  type Message,
 } from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
+import { useErrorEmbed } from "embeds/errorEmbed";
+import { buildModEmbed } from "embeds/modEmbed";
 import ms from "enhanced-ms";
-import { slowdown } from "src/features/mod/slowdown";
-import { assertInteraction } from "src/types";
+import { slowdown } from "features/mod/slowdown";
+import { assertInteraction } from "types";
 import { safeChannel } from "utils/safeThings";
 import { shouldModerateSilently } from "utils/silent";
 
@@ -47,31 +46,36 @@ export const data = new SlashCommandSubcommandBuilder()
       );
   });
 
-export async function run(
-  interaction: ChatInputCommandInteraction,
-): Promise<Message | InteractionResponse | undefined> {
+export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   assertInteraction(interaction);
 
   const channelOption = interaction.options.getChannel("channel");
   let channel = await safeChannel(interaction.guild, interaction.channel.id);
   if (channelOption) channel = await safeChannel(interaction.guild, channelOption.id);
 
-  const time = interaction.options.getString("time");
-  if (!time)
-    return await errorEmbed({
-      interaction,
-      title: "No time provided.",
-      reason:
-        "You somehow ran the command without a time value being provided. That is an error. You might want to report this, as it is not supposed to ever happen.",
-    });
+  const time = interaction.options.getString("time", true);
 
   const timeMillisec = ms(time) ?? 0;
   const reason = interaction.options.getString("reason");
 
-  return await slowdown(interaction, {
+  const isSilent = await shouldModerateSilently(interaction);
+
+  const result = await slowdown({
     timeMillisec,
     reason,
     channel,
-    isSilent: await shouldModerateSilently(interaction),
+    isSilent,
+    moderator: interaction.user,
+    guild: interaction.guild,
   });
+
+  if (result.success)
+    await interaction.reply({
+      flags: isSilent ? ["IsComponentsV2", "Ephemeral"] : "IsComponentsV2",
+      components: [await buildModEmbed(result.out)],
+    });
+  else {
+    await useErrorEmbed({ interaction, ...result.out });
+  }
+  return;
 }

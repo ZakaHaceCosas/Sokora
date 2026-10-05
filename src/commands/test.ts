@@ -1,11 +1,16 @@
-import { EmbedBuilder, SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js";
+import {
+  EmbedBuilder,
+  InteractionContextType,
+  SlashCommandBuilder,
+  type ChatInputCommandInteraction,
+} from "discord.js";
 import { colorize, Sokolors } from "utils/colorize";
 import { assertInteraction } from "types";
 
 export const data = new SlashCommandBuilder()
   .setName("test")
   .setDescription("Run the Sokora test suite.")
-  .setContexts(0);
+  .setContexts(InteractionContextType.Guild);
 
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   assertInteraction(interaction);

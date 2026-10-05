@@ -4,8 +4,8 @@ import { as, type SafeMessage } from "types";
 import { safeMessage } from "utils/safeThings";
 
 export const mockGuild = as<Guild>({
-  memberCount: 12 ** 2,
   id: DEV_GUILD_ID,
+  memberCount: 12 ** 2,
   name: "Kosora",
   ownerId: OWNER,
   members: {

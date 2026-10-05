@@ -1,10 +1,6 @@
-import {
-  SlashCommandSubcommandBuilder,
-  type ChatInputCommandInteraction,
-  type InteractionResponse,
-  type Message,
-} from "discord.js";
+import { SlashCommandSubcommandBuilder, type ChatInputCommandInteraction } from "discord.js";
 import { useErrorEmbed } from "embeds/errorEmbed";
+import { buildModEmbed } from "embeds/modEmbed";
 import { delwarn } from "features/mod/delwarn";
 import { assertInteraction } from "types";
 import { shouldModerateSilently } from "utils/silent";
@@ -21,6 +17,9 @@ export const data = new SlashCommandSubcommandBuilder()
   .addNumberOption(number =>
     number.setName("id").setDescription("The id of the warn.").setRequired(true),
   )
+  .addStringOption(input =>
+    input.setName("reason").setDescription("The reason for removing the warning."),
+  )
   .addBooleanOption(bool => {
     return bool
       .setName("silent")
@@ -29,34 +28,29 @@ export const data = new SlashCommandSubcommandBuilder()
       );
   });
 
-export async function run(
-  interaction: ChatInputCommandInteraction,
-): Promise<Message | InteractionResponse | undefined> {
+export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   assertInteraction(interaction);
 
-  const user = interaction.options.getUser("user");
-  const warnId = interaction.options.getNumber("id");
+  const target = interaction.options.getUser("user", true);
+  const warnId = interaction.options.getNumber("id", true);
+  const reason = interaction.options.getString("reason");
 
-  if (!user)
-    return await useErrorEmbed({
-      interaction,
-      title: "No user provided.",
-      reason:
-        "You somehow ran the command without a user being provided. That is an error. You might want to report this, as it is not supposed to ever happen.",
-    });
-
-  if (!warnId)
-    return await useErrorEmbed({
-      interaction,
-      title: "No ID provided.",
-      reason:
-        "You somehow ran the command without an ID being provided. That is an error. You might want to report this, as it is not supposed to ever happen.",
-    });
-
-  // TODO: make this as in other places
-  return await delwarn(interaction, {
-    user,
+  const result = await delwarn({
+    target,
+    moderator: interaction.user,
+    guild: interaction.guild,
     warnId,
+    reason,
     isSilent: await shouldModerateSilently(interaction),
   });
+
+  if (result.success)
+    await interaction.reply({
+      flags: ["IsComponentsV2", "Ephemeral"],
+      components: [await buildModEmbed(result.out)],
+    });
+  else {
+    await useErrorEmbed({ interaction, ...result.out });
+  }
+  return;
 }

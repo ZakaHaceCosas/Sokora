@@ -1,25 +1,23 @@
 import { createCase } from "database/moderation";
 import type { Guild, User } from "discord.js";
 import { getModError } from "embeds/modEmbed";
-import type { FeatureOutput } from "types";
+import type { FeatureOutput, ModActionResult } from "types";
 import { errorToFeature } from "utils/errorType";
 import { feature, type MethodParameters } from "utils/feature";
 
 interface P {
   guild: Guild;
   moderator: User;
+  isSilent: boolean;
   target: User;
   reason: string | null;
 }
 
-interface O {
-  title: string;
-  reason: string | null;
-}
-
-async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOutput<O>> {
+async function method(
+  ...parameters: MethodParameters<P, ModActionResult>
+): Promise<FeatureOutput<ModActionResult>> {
   const [ok, fail, options] = parameters;
-  const { target, reason, guild, moderator } = options;
+  const { target, reason, guild, moderator, isSilent } = options;
 
   const error = await getModError("BanMembers", {
     target,
@@ -31,10 +29,16 @@ async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOut
 
   try {
     await guild.members.unban(target.id, reason ?? undefined);
-    await createCase(guild, target, "UNBAN", moderator, reason);
+    const caseId = await createCase(guild, target, "UNBAN", moderator, reason);
     return ok({
       title: "Unbanned user.",
       reason,
+      isSilent,
+      moderator,
+      guild,
+      action: "UNBAN",
+      caseId,
+      error: null,
     });
   } catch (error) {
     return fail(errorToFeature(error));

@@ -1,4 +1,5 @@
 import {
+  InteractionContextType,
   SlashCommandBuilder,
   SlashCommandSubcommandBuilder,
   SlashCommandSubcommandGroupBuilder,
@@ -61,7 +62,7 @@ async function createSubCommand(name: string): Promise<Command> {
   const command = new SlashCommandBuilder()
     .setName(name.toLowerCase())
     .setDescription("This command has no description.")
-    .setContexts(0);
+    .setContexts(InteractionContextType.Guild);
 
   const subNames: string[] = [];
   // Base executable subcommands first, then subcommands groups

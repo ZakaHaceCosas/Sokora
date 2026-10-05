@@ -31,12 +31,14 @@ describe("interkora settings module", () => {
 
     expect(out).toEqual([
       {
+        ok: true,
         getterOutput: ["false"],
         importOutput: [],
         queryOutput: [],
         setterOutput: [],
       },
       {
+        ok: true,
         getterOutput: [
           JSON.stringify({
             enabled: true,
@@ -49,6 +51,7 @@ describe("interkora settings module", () => {
         setterOutput: [],
       },
       {
+        ok: true,
         getterOutput: ["false"],
         importOutput: [],
         queryOutput: [],

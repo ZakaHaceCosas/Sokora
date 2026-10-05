@@ -1,5 +1,6 @@
 import { fetchServerboard, type ServerboardEntry } from "database/serverboard";
 import {
+  InteractionContextType,
   SlashCommandBuilder,
   type ButtonInteraction,
   type ChatInputCommandInteraction,
@@ -15,7 +16,7 @@ export const data = new SlashCommandBuilder()
   .setName("serverboard")
   .setDescription("Shows the servers that have Sokora.")
   .addNumberOption(number => number.setName("page").setDescription("The page you want to see."))
-  .setContexts(0);
+  .setContexts(InteractionContextType.Guild);
 
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   let guildList: ServerboardEntry[];

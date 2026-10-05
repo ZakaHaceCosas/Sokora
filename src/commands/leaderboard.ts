@@ -1,6 +1,7 @@
 import { getGuildLeaderboard } from "database/leveling";
 import {
   ContainerBuilder,
+  InteractionContextType,
   SlashCommandBuilder,
   TextDisplayBuilder,
   type ButtonInteraction,
@@ -16,7 +17,7 @@ export const data = new SlashCommandBuilder()
   .setName("leaderboard")
   .setDescription("Displays the guild leaderboard.")
   .addNumberOption(option => option.setName("page").setDescription("Page number to display."))
-  .setContexts(0);
+  .setContexts(InteractionContextType.Guild);
 
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   const guild = interaction.guild;

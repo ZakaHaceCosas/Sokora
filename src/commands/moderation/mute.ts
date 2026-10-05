@@ -1,14 +1,9 @@
-import {
-  SlashCommandSubcommandBuilder,
-  type ChatInputCommandInteraction,
-  type InteractionResponse,
-  type Message,
-} from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
-import { hasModError } from "embeds/modEmbed";
+import { SlashCommandSubcommandBuilder, type ChatInputCommandInteraction } from "discord.js";
+import { buildErrorEmbed, useErrorEmbed } from "embeds/errorEmbed";
+import { buildModEmbed } from "embeds/modEmbed";
 import ms from "enhanced-ms";
-import { mute } from "src/features/mod/mute";
-import { assertInteraction } from "src/types";
+import { mute } from "features/mod/mute";
+import { assertInteraction } from "types";
 import { shouldModerateSilently } from "utils/silent";
 
 export const data = new SlashCommandSubcommandBuilder()
@@ -32,30 +27,49 @@ export const data = new SlashCommandSubcommandBuilder()
       );
   });
 
-export async function run(
-  interaction: ChatInputCommandInteraction,
-): Promise<undefined | Message | InteractionResponse> {
+export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   assertInteraction(interaction);
 
-  const user = interaction.options.getUser("user", true);
+  const target = interaction.options.getUser("user", true);
   const duration = interaction.options.getString("duration", true);
   const reason = interaction.options.getString("reason");
 
   const durationMillisec = ms(duration);
 
-  if (!durationMillisec)
-    return await errorEmbed({
-      interaction,
-      title: `You can’t mute ${user.username}.`,
-      reason: "The duration is invalid.",
+  if (!durationMillisec) {
+    await interaction.reply({
+      components: [
+        (
+          await buildErrorEmbed({
+            interaction,
+            title: `You can’t mute ${target.username}.`,
+            reason: "The duration is invalid.",
+          })
+        )[0],
+      ],
+      flags: ["Ephemeral", "IsComponentsV2"],
     });
+    return;
+  }
 
   const isSilent = await shouldModerateSilently(interaction);
 
-  return await mute(interaction, {
-    user,
+  const result = await mute({
+    target,
     durationMillisec,
     reason,
+    moderator: interaction.user,
+    guild: interaction.guild,
     isSilent,
   });
+
+  if (result.success)
+    await interaction.reply({
+      flags: isSilent ? ["IsComponentsV2", "Ephemeral"] : "IsComponentsV2",
+      components: [await buildModEmbed(result.out)],
+    });
+  else {
+    await useErrorEmbed({ interaction, ...result.out });
+  }
+  return;
 }

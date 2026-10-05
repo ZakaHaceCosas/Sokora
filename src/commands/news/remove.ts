@@ -9,7 +9,7 @@ import {
   type Message,
   type TextChannel,
 } from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
+import { buildErrorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { safeChannel, safeMember } from "utils/safeThings";
 import { assertInteraction } from "types";
@@ -28,25 +28,37 @@ export async function run(
   interaction: ChatInputCommandInteraction,
 ): Promise<Message | InteractionResponse | undefined> {
   assertInteraction(interaction);
-  if (!(await safeMember(interaction.guild, interaction.user.id)).permissions.has("ManageGuild"))
-    return await errorEmbed({
-      interaction,
-      title: "You can’t execute this command.",
-      reason: "You need the **Manage Server** permission.",
+  if (!(await safeMember(interaction.guild, interaction.user.id)).permissions.has("ManageGuild")) {
+    await interaction.reply({
+      components: [
+        (
+          await buildErrorEmbed({
+            interaction,
+            title: "You can’t execute this command.",
+            reason: "You need the **Manage Server** permission.",
+          })
+        )[0],
+      ],
+      flags: ["IsComponentsV2", "Ephemeral"],
     });
 
-  const id = interaction.options.getNumber("id");
-  if (!id)
-    return await errorEmbed({
-      interaction,
-      title: "No ID provided.",
-      reason:
-        "You somehow ran the command without an ID being provided. That is an error. You might want to report this, as it is not supposed to ever happen.",
-    });
+    return;
+  }
+
+  const id = interaction.options.getNumber("id", true);
 
   const news = await getNews(interaction.guild.id, id);
-  if (!news)
-    return await errorEmbed({ interaction, title: "The specified news post doesn’t exist." });
+  if (!news) {
+    await interaction.reply({
+      components: [
+        (
+          await buildErrorEmbed({ interaction, title: "The specified news post doesn’t exist." })
+        )[0],
+      ],
+      flags: ["IsComponentsV2", "Ephemeral"],
+    });
+    return;
+  }
 
   const newsChannel = (await safeChannel(
     interaction.guild,

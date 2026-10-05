@@ -1,5 +1,5 @@
 import { SlashCommandSubcommandBuilder, type ChatInputCommandInteraction } from "discord.js";
-import { buildErrorEmbed, useErrorEmbed } from "embeds/errorEmbed";
+import { useErrorEmbed } from "embeds/errorEmbed";
 import { buildModEmbed } from "embeds/modEmbed";
 import ms from "enhanced-ms";
 import { ban } from "features/mod/ban";

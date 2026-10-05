@@ -9,7 +9,7 @@ import {
   ThumbnailBuilder,
   type TextChannel,
 } from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
+import { useErrorEmbed } from "embeds/errorEmbed";
 import { channelCheck } from "utils/channelCheck";
 import { colorize, Sokolors } from "utils/colorize";
 import { replaceVariables } from "utils/replace";
@@ -80,11 +80,9 @@ export default (async function run(member) {
   try {
     await dmChannel.send({ components: [await welcomeContainer(true)], flags: "IsComponentsV2" });
   } catch (error) {
-    return await errorEmbed({
+    return await useErrorEmbed({
       client: member.client,
       error,
-      log: true,
-      forward: true,
       fileName: "guildMemberAdd",
     });
   }

@@ -168,7 +168,7 @@ export type ModError =
       permission: keyof typeof PermissionFlagsBits;
     }
   | {
-      code: Omit<ModErrorCode, ModErrorCode.MissingPermission>;
+      code: Exclude<ModErrorCode, ModErrorCode.MissingPermission>;
     };
 
 export function isModError(error: unknown): error is ModError {
@@ -176,27 +176,20 @@ export function isModError(error: unknown): error is ModError {
 }
 
 // TODO: check that this is a ModActionResult with success false
-export function isModErroryResult(error: unknown): error is ModActionResult & { success: false } {
+export function isModErroryResult(
+  error: unknown,
+): error is Extract<ModActionResult, { success: false }> {
   return error != null && typeof error == "object" && Object.hasOwn(error, "code");
 }
 
-export type ModActionResult = (
-  {
-      success: true;
-    } | {
-      success: false;
-      error: ModError | Error;
-    }
-) &
-  ModActionPayload &
-  ({
-        caseId: number;
-      }
-    | {
-        caseId?: number;
-        previousCaseId: number;
-      }
-  );
+export type ModActionResult = ModActionPayload & {
+  error: null | ModError | Error;
+  caseId: number;
+  previousCaseId?: number;
+  title: string;
+  reason: string | null;
+  isSilent: boolean;
+};
 
 /// FEATURE TYPES
 
@@ -469,15 +462,16 @@ export function isSettingValueValid<K extends keyof TS, S extends SettingKeyFor<
   if (def.iterable) {
     const isArray = Array.isArray(value);
     if (isOptional && (value === undefined || (isArray && value.length > 0))) return true;
-    return !isArray || (def.type === "OBJECT" && def.validation?.(value[0]))
-      ? false
-      : value.every(v => {
-          return isSettingValueValid(v, {
-            key: config.key,
-            setting: config.setting,
-            def: { ...def, iterable: false },
-          });
+    if (isArray && !(def.type === "OBJECT" && def.validation?.(value[0])))
+      return value.every(v => {
+        return isSettingValueValid(v, {
+          key: config.key,
+          setting: config.setting,
+          def: { ...def, iterable: false },
         });
+      });
+
+    return false;
   }
 
   if (typeof value === "object" || (value === undefined && isOptional)) return true;

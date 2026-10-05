@@ -13,6 +13,7 @@ import {
   type User,
   codeBlock,
   ContainerBuilder,
+  InteractionContextType,
   PermissionsBitField,
   SlashCommandBuilder,
   SlashCommandSubcommandBuilder,
@@ -30,7 +31,7 @@ export const data = new SlashCommandBuilder()
   .setName("settings")
   .setDescription("Configure Sokora to your liking.")
   .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator)
-  .setContexts(0);
+  .setContexts(InteractionContextType.Guild);
 
 for (const key of serverSettingsKeys)
   data.addSubcommand(

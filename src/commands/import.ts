@@ -83,7 +83,7 @@ async function containerHelper(
       ),
     );
 
-  const color = await colorize({ user, avatar, hue: 300 });
+  const color = await colorize({ user, avatar, hue: Sokolors.Purple });
   const errorColor = await colorize({ user, avatar, hue: Sokolors.Red });
   container.setAccentColor(error ? errorColor : color);
 
@@ -300,48 +300,48 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       return;
     }
 
-    if (["TATSU", "AMARI", "LURKR"].includes(cID)) {
-      const modal = new ModalBuilder()
-        .setCustomId(cID)
-        .setTitle(`•  API key to import`)
-        .addLabelComponents(
-          new LabelBuilder()
-            .setLabel("Value")
-            .setDescription(
-              `You should have an API key from ${cID}. Don’t know how to get it? Check /help.`,
-            )
-            .setTextInputComponent(
-              new TextInputBuilder()
-                .setCustomId("setting")
-                .setPlaceholder("Type in the value")
-                .setMaxLength(MAX_INPUT_CHARS)
-                .setStyle(TextInputStyle.Paragraph)
-                .setRequired(true),
-            ),
-        );
+    if (!["TATSU", "AMARI", "LURKR"].includes(cID)) return;
 
-      await buttonInteraction.showModal(modal);
-      const modalInteraction = await modalSubmit(buttonInteraction, modal, "import.ts");
-      collector.resetTimer({ time: COLLECTOR_DURATION });
-      if (!modalInteraction) return;
+    const modal = new ModalBuilder()
+      .setCustomId(cID)
+      .setTitle(`•  API key to import`)
+      .addLabelComponents(
+        new LabelBuilder()
+          .setLabel("Value")
+          .setDescription(
+            `You should have an API key from ${cID}. Don’t know how to get it? Check /help.`,
+          )
+          .setTextInputComponent(
+            new TextInputBuilder()
+              .setCustomId("setting")
+              .setPlaceholder("Type in the value")
+              .setMaxLength(MAX_INPUT_CHARS)
+              .setStyle(TextInputStyle.Paragraph)
+              .setRequired(true),
+          ),
+      );
 
-      try {
-        await construct(
-          user,
-          avatar,
-          interaction.guild,
-          cID,
-          container,
-          interaction,
-          buttonInteraction,
-          reply,
-          modalInteraction.fields.getTextInputValue("setting"),
-          cID as keyof typeof SupportedAndRewarded,
-          modalInteraction,
-        );
-      } catch (error) {
-        return await collapse(error, interaction);
-      }
+    await buttonInteraction.showModal(modal);
+    const modalInteraction = await modalSubmit(buttonInteraction, modal, "import.ts");
+    collector.resetTimer({ time: COLLECTOR_DURATION });
+    if (!modalInteraction) return;
+
+    try {
+      await construct(
+        user,
+        avatar,
+        interaction.guild,
+        cID,
+        container,
+        interaction,
+        buttonInteraction,
+        reply,
+        modalInteraction.fields.getTextInputValue("setting"),
+        cID as keyof typeof SupportedAndRewarded,
+        modalInteraction,
+      );
+    } catch (error) {
+      return await collapse(error, interaction);
     }
   });
 

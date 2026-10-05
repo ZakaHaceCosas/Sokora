@@ -5,11 +5,8 @@ import {
   SlashCommandSubcommandBuilder,
   TextDisplayBuilder,
   type ChatInputCommandInteraction,
-  type InteractionResponse,
-  type Message,
   type TextChannel,
 } from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
 import { newsEmbed } from "embeds/newsEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { newsModal } from "utils/newsModal";
@@ -17,6 +14,7 @@ import { replaceVariables } from "utils/replace";
 import { safeChannel, safeMember } from "utils/safeThings";
 import { sendChannelNews } from "utils/sendChannelNews";
 import { assertInteraction } from "types";
+import { buildErrorEmbed, useErrorEmbed } from "embeds/errorEmbed";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("edit")
@@ -28,36 +26,40 @@ export const data = new SlashCommandSubcommandBuilder()
       .setRequired(true);
   });
 
-export async function run(
-  interaction: ChatInputCommandInteraction,
-): Promise<Message | InteractionResponse | undefined> {
+export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   const user = interaction.user;
   assertInteraction(interaction);
-  if (!(await safeMember(interaction.guild, user.id)).permissions.has("ManageGuild"))
-    return await errorEmbed({
-      interaction,
-      title: "You can’t execute this command.",
-      reason: "You need the **Manage Server** permission.",
+  if (!(await safeMember(interaction.guild, user.id)).permissions.has("ManageGuild")) {
+    await interaction.reply({
+      components: [
+        (
+          await buildErrorEmbed({
+            title: "You can’t execute this command.",
+            reason: "You need the **Manage Server** permission.",
+          })
+        )[0],
+      ],
+      flags: ["Ephemeral", "IsComponentsV2"],
     });
+    return;
+  }
 
-  const id = interaction.options.getNumber("id");
-  if (!id)
-    return await errorEmbed({
-      interaction,
-      title: "No ID provided.",
-      reason:
-        "You somehow ran the command without an ID being provided. That is an error. You might want to report this, as it is not supposed to ever happen.",
-    });
+  const id = interaction.options.getNumber("id", true);
 
   const guild = interaction.guild;
   const news = await getNews(guild.id, id);
-  if (!news)
-    return await errorEmbed({ interaction, title: "The specified news post doesn’t exist." });
+  if (!news) {
+    await interaction.reply({
+      components: [(await buildErrorEmbed({ title: "The specified news post doesn’t exist." }))[0]],
+      flags: ["Ephemeral", "IsComponentsV2"],
+    });
+    return;
+  }
 
   try {
     await interaction.showModal(await newsModal(news));
   } catch (error) {
-    await errorEmbed({ interaction, error, log: true, forward: true, fileName: "edit" });
+    return await useErrorEmbed({ interaction, error, fileName: "edit" });
   }
 
   interaction.client.once("interactionCreate", async modalInteraction => {

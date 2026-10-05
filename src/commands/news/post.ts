@@ -5,10 +5,7 @@ import {
   SlashCommandSubcommandBuilder,
   TextDisplayBuilder,
   type ChatInputCommandInteraction,
-  type InteractionResponse,
-  type Message,
 } from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { dekominator } from "utils/kominator";
 import { newsModal } from "utils/newsModal";
@@ -16,28 +13,35 @@ import { replaceVariables } from "utils/replace";
 import { safeMember } from "utils/safeThings";
 import { sendChannelNews } from "utils/sendChannelNews";
 import { assertInteraction } from "types";
+import { buildErrorEmbed, useErrorEmbed } from "embeds/errorEmbed";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("post")
   .setDescription("Post your news.");
 
-export async function run(
-  interaction: ChatInputCommandInteraction,
-): Promise<Message | InteractionResponse | undefined> {
+export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   const user = interaction.user;
   assertInteraction(interaction);
-  if (!(await safeMember(interaction.guild, user.id)).permissions.has("ManageGuild"))
-    return await errorEmbed({
-      interaction,
-      title: "You can’t execute this command.",
-      reason: "You need the **Manage Server** permission.",
+  if (!(await safeMember(interaction.guild, user.id)).permissions.has("ManageGuild")) {
+    await interaction.reply({
+      components: [
+        (
+          await buildErrorEmbed({
+            title: "You can’t execute this command.",
+            reason: "You need the **Manage Server** permission.",
+          })
+        )[0],
+      ],
+      flags: ["Ephemeral", "IsComponentsV2"],
     });
+    return;
+  }
 
   const guild = interaction.guild;
   try {
     await interaction.showModal(await newsModal(null, guild));
   } catch (error) {
-    await errorEmbed({ interaction, error, log: true, forward: true, fileName: "post" });
+    return await useErrorEmbed({ interaction, error, fileName: "post" });
   }
 
   interaction.client.once("interactionCreate", async modalInteraction => {
@@ -81,7 +85,7 @@ export async function run(
             : undefined,
       });
     } catch (error) {
-      return await errorEmbed({ interaction, error, forward: true, fileName: "post" });
+      return await useErrorEmbed({ interaction, error, fileName: "post" });
     }
 
     await modalInteraction.reply({

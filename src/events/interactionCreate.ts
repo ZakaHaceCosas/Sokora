@@ -1,6 +1,6 @@
 import { type Interaction, SlashCommandSubcommandBuilder } from "discord.js";
 import { commands, subCommands } from "handlers/commands";
-import { errorEmbed } from "embeds/errorEmbed";
+import { useErrorEmbed } from "embeds/errorEmbed";
 import type { Event } from "types";
 // import { errorType } from "utils/errorType";
 
@@ -31,11 +31,9 @@ export default (async function run(interaction: Interaction) {
     // setTimeout(() => errorRateLimit.delete(errorKey), 10_000); // Is this ratelimit prevention really still necessary?
 
     try {
-      await errorEmbed({
+      await useErrorEmbed({
         interaction,
         error,
-        log: true,
-        forward: true,
         fileName: command.data.name,
       });
     } catch (error_) {

@@ -1,6 +1,8 @@
-import { SlashCommandSubcommandBuilder, type ChatInputCommandInteraction } from "discord.js";
-import { unban } from "src/features/mod/unban";
-import { assertInteraction } from "src/types";
+import { type ChatInputCommandInteraction, SlashCommandSubcommandBuilder } from "discord.js";
+import { useErrorEmbed } from "embeds/errorEmbed";
+import { buildModEmbed } from "embeds/modEmbed";
+import { unban } from "features/mod/unban";
+import { assertInteraction } from "types";
 import { shouldModerateSilently } from "utils/silent";
 
 export const data = new SlashCommandSubcommandBuilder()
@@ -17,12 +19,26 @@ export const data = new SlashCommandSubcommandBuilder()
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   assertInteraction(interaction);
 
-  const user = interaction.options.getUser("id", true);
+  const target = interaction.options.getUser("id", true);
   const reason = interaction.options.getString("reason");
 
-  return await unban(interaction, {
-    user,
+  const isSilent = await shouldModerateSilently(interaction);
+
+  const result = await unban({
+    target,
+    isSilent,
+    guild: interaction.guild,
+    moderator: interaction.user,
     reason,
-    isSilent: await shouldModerateSilently(interaction),
   });
+
+  if (result.success)
+    await interaction.reply({
+      flags: isSilent ? ["IsComponentsV2", "Ephemeral"] : "IsComponentsV2",
+      components: [await buildModEmbed(result.out)],
+    });
+  else {
+    await useErrorEmbed({ interaction, ...result.out });
+  }
+  return;
 }

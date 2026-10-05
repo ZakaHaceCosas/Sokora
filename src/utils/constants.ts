@@ -33,5 +33,7 @@ export const OWNER = process.env.OWNER ?? "725985503177867295";
 export const IS_CANARY = process.env.CANARY === "true";
 export const DEV_GUILD_ID = process.env.DEVELOPMENT_GUILD_ID ?? "862269637575573504";
 export const DEV_IRL_TESTING_ENABLED = process.env.DEVELOPMENT_ENABLE_IRL_TEST_SUITE === "true";
+export const TESTER_USER_A = process.env.TESTER_USER_ID_A;
+export const TESTER_USER_B = process.env.TESTER_USER_ID_B;
 export const ERROR_CHANNEL_ID = process.env.ERROR_CHANNEL_ID;
 export const REPORT_CHANNEL_ID = process.env.REPORT_CHANNEL_ID;

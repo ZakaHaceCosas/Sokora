@@ -8,7 +8,7 @@ import type {
   VoiceChannel,
 } from "discord.js";
 import { getModError } from "embeds/modEmbed";
-import type { FeatureOutput } from "types";
+import type { FeatureOutput, ModActionResult } from "types";
 import { errorToFeature } from "utils/errorType";
 import { feature, type MethodParameters } from "utils/feature";
 import { mention } from "utils/mention";
@@ -23,18 +23,16 @@ interface P {
     | PrivateThreadChannel
     | VoiceChannel;
   reason: string | null;
+  moderator: User;
   amount: number;
   targetUser: User | undefined;
 }
 
-interface O {
-  title: string;
-  reason: string | null;
-}
-
-async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOutput<O>> {
+async function method(
+  ...parameters: MethodParameters<P, ModActionResult>
+): Promise<FeatureOutput<ModActionResult>> {
   const [ok, fail, options] = parameters;
-  const { channel, amount, targetUser, reason } = options;
+  const { channel, amount, targetUser, reason, moderator } = options;
 
   const error = await getModError("ManageMessages", {
     channel,
@@ -84,7 +82,13 @@ async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOut
     return fail(errorToFeature(error));
   }
 
+  // TODO: this is annoyingly wrong ASÑDJASPODUYA)"Y/"
   return ok({
+    error: null,
+    guild: channel.guild,
+    action: "CLEAR",
+    target: channel,
+    moderator,
     title: `Cleared ${deletedAmount} ${pluralOrNot("message", deletedAmount)}${targetUser ? ` from ${mention(targetUser.id, "USER")}` : ""}`,
     reason,
   });
