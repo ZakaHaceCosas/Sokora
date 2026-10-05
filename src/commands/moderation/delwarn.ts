@@ -53,6 +53,7 @@ export async function run(
         "You somehow ran the command without an ID being provided. That is an error. You might want to report this, as it is not supposed to ever happen.",
     });
 
+  // TODO: make this as in other places
   return await delwarn(interaction, {
     user,
     warnId,

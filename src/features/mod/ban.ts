@@ -2,7 +2,7 @@ import { client } from "botfile";
 import { createCase } from "database/moderation";
 import type { Guild, User } from "discord.js";
 import { getModError } from "embeds/modEmbed";
-import type { FeatureOutput } from "types";
+import type { FeatureOutput, ModActionResult } from "types";
 import { errorToFeature } from "utils/errorType";
 import { feature, type MethodParameters } from "utils/feature";
 import { safeMembers } from "utils/safeThings";
@@ -12,6 +12,7 @@ import { scheduleUnban } from "utils/unbanScheduler";
 // i removed isSilent bc i thought of keeping it view-sided, but only now i remembered that logging is controller-sided
 // so yeah i should re-add it (whenever i actually add logging to features, which is not now somehow)
 interface P {
+  isSilent: boolean;
   guild: Guild;
   /** Moderator who bans. */
   moderator: User;
@@ -25,16 +26,14 @@ interface P {
   delMessageSeconds: number | undefined;
 }
 
-// TODO: (for all O too)
+// TODO: (for all type O other than this)
 // make it return all data needed for a modEmbed, even if user provided already
-interface O {
-  title: string;
-  reason: string | null;
-}
+type O = ModActionResult & { success: true };
 
 async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOutput<O>> {
   const [ok, fail, options] = parameters;
-  const { guild, target, moderator, durationMillisec, reason, delMessageSeconds } = options;
+  const { guild, target, isSilent, moderator, durationMillisec, reason, delMessageSeconds } =
+    options;
 
   const isMember = (await safeMembers(guild)).has(target.id);
 
@@ -56,13 +55,13 @@ async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOut
       deleteMessageSeconds: delMessageSeconds,
     });
 
-    const caseId = await createCase(guild.id, target.id, "BAN", moderator.id, reason);
+    const caseId = await createCase(guild, target, "BAN", moderator, reason);
 
     if (durationMillisec)
       scheduleUnban(client, guild, target.id, moderator.id, durationMillisec, caseId);
 
     return ok({
-      /* success: true,
+      success: true,
       target,
       guild,
       moderator,
@@ -72,9 +71,8 @@ async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOut
       shouldDm: isMember,
       expiresAt: durationMillisec ? new Date(durationMillisec) : undefined,
       isSilent,
-      reason, */
-      title: "Banned user.", // not even a good title i know, WILL CHANGE
-      reason: reason ?? null,
+      reason,
+      title: `Banned ${target.username}.`,
     });
   } catch (error) {
     return fail(errorToFeature(error));

@@ -1,60 +1,63 @@
-import type { Channel } from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
-import { hasModError, modEmbed } from "embeds/modEmbed";
-import type { SafeChatInteraction } from "types";
+import { createCase } from "database/moderation";
+import type { Channel, Guild, User } from "discord.js";
+import { getModError } from "embeds/modEmbed";
+import type { FeatureOutput } from "types";
+import { errorToFeature } from "utils/errorType";
+import { feature, type MethodParameters } from "utils/feature";
 
-export async function lock(
-  interaction: SafeChatInteraction,
-  options: {
-    channel: Channel;
-    reason: string | null;
-  },
-) {
-  const { channel, reason } = options;
+interface P {
+  channel: Channel;
+  moderator: User;
+  guild: Guild;
+  isSilent: boolean;
+  reason: string;
+}
 
-  if (
-    await hasModError("Manage Roles", {
-      interaction,
-      channel: channel.id,
-      errorOptions: { allErrors: false, botError: true, channelError: true },
-    })
-  )
-    return;
+interface O {
+  title: string;
+  reason: string | null;
+}
+
+async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOutput<O>> {
+  const [ok, fail, options] = parameters;
+  const { channel, reason, guild, moderator } = options;
+
+  const error = await getModError("ManageRoles", {
+    channel,
+    errorOptions: { allErrors: false, botError: true, channelError: true },
+  });
+
+  if (error) return fail(errorToFeature(error));
 
   if (channel.isThread() || channel.isDMBased())
-    return await errorEmbed({
-      interaction,
+    return fail({
       title: "You have provided a channel that can’t be locked.",
     });
 
-  if (!channel.permissionsFor(interaction.guild.id)?.has("SendMessages"))
-    return await errorEmbed({
-      interaction,
+  if (!channel.permissionsFor(guild.id)?.has("SendMessages"))
+    return fail({
       title: "You can’t execute this command.",
       reason: "The channel is already locked.",
     });
 
   try {
+    // TODO (for all features)
+    // promise.all everywhere
+    // createCase everywhere
     await Promise.all([
-      channel.permissionOverwrites.create(interaction.guild.id, {
+      channel.permissionOverwrites.create(guild.id, {
         SendMessages: false,
         SendMessagesInThreads: false,
         CreatePublicThreads: false,
         CreatePrivateThreads: false,
       }),
-      modEmbed({
-        interaction,
-        channel: channel.id,
-        customText: { logTitle: "Locked a channel" },
-        reason,
-      }),
+      createCase(guild, channel, "LOCK", moderator, reason),
     ]);
+
+    return ok({ title: "Locked a channel", reason });
   } catch (error) {
-    return await errorEmbed({
-      interaction,
-      error,
-      forward: true,
-      fileName: "lock",
-    });
+    return fail(errorToFeature(error));
   }
 }
+
+export const lock = feature("mod/lock", method);

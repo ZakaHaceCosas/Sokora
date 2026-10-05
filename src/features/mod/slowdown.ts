@@ -42,7 +42,7 @@ async function work(...parameters: MethodParameters<P, O>): Promise<FeatureOutpu
     });
 
   await channel.setRateLimitPerUser(timeMillisec / 1000, reason ?? undefined);
-  await createCase(guild.id, channel.id, "SLOWDOWN", moderator.id, reason);
+  await createCase(guild, channel, "SLOWDOWN", moderator, reason);
 
   return ok({
     title: timeMillisec

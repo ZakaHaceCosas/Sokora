@@ -10,6 +10,7 @@ import { buildModEmbed } from "embeds/modEmbed";
 import { clear } from "features/mod/clear";
 import { assertInteraction } from "types";
 import { safeChannel } from "utils/safeThings";
+import { shouldModerateSilently } from "utils/silent";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("clear")
@@ -66,26 +67,20 @@ export async function run(
       title: "You have provided a channel that can’t have messages to clear.",
     });
 
-  const out = await clear({
+  const result = await clear({
     targetUser,
     amount,
     reason,
     channel,
   });
 
-  if (!out.success) {
-    return await useErrorEmbed({
-      interaction,
-      title: out.out.title,
-      reason: out.out.reason ?? undefined,
+  if (result.success)
+    await interaction.reply({
+      flags: ["IsComponentsV2", "Ephemeral"],
+      components: [await buildModEmbed(result.out)],
     });
+  else {
+    await useErrorEmbed({ interaction, ...result.out });
   }
-
-  return await interaction.reply({
-    components: [
-      // TODO: this should be a ModActionResult or smth
-      // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-      await buildModEmbed(out.out),
-    ],
-  });
+  return;
 }

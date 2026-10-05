@@ -2,15 +2,12 @@
 // i mean technically better but awful CQ
 
 import { client as client_ } from "botfile";
-import { getCase, type ModType } from "database/moderation";
+import { getCase } from "database/moderation";
 import {
   SectionBuilder,
   TextDisplayBuilder,
   ThumbnailBuilder,
   ContainerBuilder,
-  type User,
-  type Channel,
-  type Guild,
   type PermissionFlagsBits,
 } from "discord.js";
 import ms from "enhanced-ms";
@@ -18,72 +15,7 @@ import { mention } from "utils/mention";
 import { safeMember } from "utils/safeThings";
 import { colorize, Sokolors } from "utils/colorize";
 import { logChannel } from "utils/logChannel";
-
-interface ModActionPayload {
-  action: ModType;
-  guild: Guild;
-  channel?: Channel;
-  moderator: User;
-  target?: User;
-  duration?: number;
-  shouldDm?: boolean;
-  expiresAt?: Date;
-  previousCaseId?: number;
-}
-
-export enum ModErrorCode {
-  CaseDoesNotExist,
-  CantModerateSokora,
-  ModeratorNotFound,
-  AlreadyBanned,
-  AlreadyUnbanned,
-  TargetNotFound,
-  NotApiModeratable,
-  MissingPermission,
-  RolePosSame,
-  ChannelDoesNotExist,
-  TargetRolePosHigher,
-  TargetOutside,
-  CantModerateSelf,
-}
-
-export type ModError =
-  | {
-      code: ModErrorCode.MissingPermission;
-      permission: keyof typeof PermissionFlagsBits;
-    }
-  | {
-      code: Omit<ModErrorCode, ModErrorCode.MissingPermission>;
-    };
-
-export function isModError(error: unknown): error is ModError {
-  return error != null && typeof error == "object" && Object.hasOwn(error, "code");
-}
-
-// TODO: check that this is a ModActionResult with success false
-export function isModErroryResult(error: unknown): error is ModActionResult & { success: false } {
-  return error != null && typeof error == "object" && Object.hasOwn(error, "code");
-}
-
-export type ModActionResult = (
-  | {
-      success: true;
-    }
-  | {
-      success: false;
-      error: ModError | Error;
-    }
-) &
-  ModActionPayload &
-  (
-    | {
-        caseId: number;
-      }
-    | {
-        caseId?: number;
-        previousCaseId: number;
-      }
-  );
+import { type ModActionPayload, type ModActionResult, type ModError, ModErrorCode } from "types";
 
 type ErrorOptions = Partial<ModActionPayload> & {
   errorOptions: {
@@ -107,6 +39,7 @@ type ModEmbedOptions = ModActionResult & {
 /**
  * Checks for errors in moderation commands.
  * @param permission The permission that the command requires. If the bot doesn't have it, it errors.
+ * (TODO: might have to check for USER perms besides bot perms)
  * @param options Error options.
  * @returns `true` if something goes wrong. `false` otherwise.
  */

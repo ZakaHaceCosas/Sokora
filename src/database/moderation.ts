@@ -1,3 +1,4 @@
+import type { Channel, Guild, User } from "discord.js";
 import { db, values } from ".";
 import type { Satisfies, TableDefinition, TypeOfDefinition } from "types";
 
@@ -10,7 +11,7 @@ export type Case = Satisfies<
       user_id: "TEXT";
       type: "TEXT";
       moderator_id: "TEXT";
-      reason: "TEXT";
+      reason: "mTEXT";
       id: "INTEGER";
       timestamp: "TIMESTAMP";
       expires_at: "mTIMESTAMP";
@@ -22,25 +23,26 @@ export type ModType =
   "MUTE" | "UNMUTE" | "WARN" | "KICK" | "BAN" | "UNBAN" | "LOCK" | "UNLOCK" | "SLOWDOWN";
 
 export async function createCase(
-  guildID: string,
-  userID: string,
+  guild: Guild,
+  target: Channel | User,
   modType: ModType,
-  moderator: string,
+  moderator: User,
   reason: string | null,
   expiresAt?: Date,
 ): Promise<number> {
   const id: number =
     (values<number>(
-      await db`SELECT id FROM moderation WHERE "guild_id" = ${guildID} ORDER BY "id" DESC LIMIT 1;`,
+      await db`SELECT id FROM moderation WHERE "guild_id" = ${guild.id} ORDER BY "id" DESC LIMIT 1;`,
       true,
     )[0] ?? 0) + 1;
 
   const insObject: TypeOfDefinition<Case> = {
-    guild_id: guildID,
-    user_id: userID,
+    guild_id: guild.id,
+    // TODO: migrate key to be neutrally named
+    user_id: target.id,
     type: modType,
-    moderator_id: moderator,
-    reason,
+    moderator_id: moderator.id,
+    reason: reason ?? undefined,
     id,
     timestamp: new Date(),
     expires_at: expiresAt,

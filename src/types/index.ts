@@ -1,4 +1,4 @@
-import type { ContainerBuilder, Interaction } from "discord.js";
+import type { Channel, ContainerBuilder, Interaction, PermissionFlagsBits } from "discord.js";
 import { getSettingDef, type TS } from "database/settings";
 import type {
   ChatInputCommandInteraction,
@@ -9,6 +9,7 @@ import type {
   TextBasedChannel,
   User,
 } from "discord.js";
+import type { ModType } from "database/moderation";
 
 /// GENERAL TYPES
 
@@ -131,6 +132,72 @@ export interface GHCommit {
   };
 }
 
+/// MODERATION TYPES
+
+export interface ModActionPayload {
+  action: ModType;
+  guild: Guild;
+  channel?: Channel;
+  moderator: User;
+  target?: User;
+  duration?: number;
+  shouldDm?: boolean;
+  expiresAt?: Date;
+  previousCaseId?: number;
+}
+
+export enum ModErrorCode {
+  CaseDoesNotExist,
+  CantModerateSokora,
+  ModeratorNotFound,
+  AlreadyBanned,
+  AlreadyUnbanned,
+  TargetNotFound,
+  NotApiModeratable,
+  MissingPermission,
+  RolePosSame,
+  ChannelDoesNotExist,
+  TargetRolePosHigher,
+  TargetOutside,
+  CantModerateSelf,
+}
+
+export type ModError =
+  | {
+      code: ModErrorCode.MissingPermission;
+      permission: keyof typeof PermissionFlagsBits;
+    }
+  | {
+      code: Omit<ModErrorCode, ModErrorCode.MissingPermission>;
+    };
+
+export function isModError(error: unknown): error is ModError {
+  return error != null && typeof error == "object" && Object.hasOwn(error, "code");
+}
+
+// TODO: check that this is a ModActionResult with success false
+export function isModErroryResult(error: unknown): error is ModActionResult & { success: false } {
+  return error != null && typeof error == "object" && Object.hasOwn(error, "code");
+}
+
+export type ModActionResult = (
+  {
+      success: true;
+    } | {
+      success: false;
+      error: ModError | Error;
+    }
+) &
+  ModActionPayload &
+  ({
+        caseId: number;
+      }
+    | {
+        caseId?: number;
+        previousCaseId: number;
+      }
+  );
+
 /// FEATURE TYPES
 
 export interface FeatureError {
@@ -146,7 +213,7 @@ export interface FeatureError {
 export type FeatureName =
   | `games/${"rps" | "coin"}`
   | `math/${"calc" | "graph"}`
-  | `mod/${"ban" | "unban" | "mute" | "kick" | "lock" | "unlock" | "warn" | "slowdown" | "delwarn" | "clear"}`;
+  | `mod/${"ban" | "unban" | "mute" | "unmute" | "kick" | "lock" | "unlock" | "warn" | "slowdown" | "delwarn" | "clear"}`;
 
 export interface PrimitiveFeatureSuccess<S> {
   success: true;

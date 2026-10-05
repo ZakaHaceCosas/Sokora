@@ -1,49 +1,50 @@
-import type { User } from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
-import { hasModError, modEmbed } from "embeds/modEmbed";
-import type { SafeChatInteraction } from "src/types";
+import type { Guild, User } from "discord.js";
+import { getModError } from "embeds/modEmbed";
 import { safeMember } from "utils/safeThings";
+import type { FeatureOutput } from "types";
+import { errorToFeature } from "utils/errorType";
+import { feature, type MethodParameters } from "utils/feature";
 
-export async function unmute(
-  interaction: SafeChatInteraction,
-  options: {
-    reason: string | null;
-    isSilent: boolean;
-    user: User;
-  },
-) {
-  const { isSilent, user, reason } = options;
-  const target = await safeMember(interaction.guild, user.id);
+interface P {
+  reason: string | null;
+  isSilent: boolean;
+  target: User;
+  guild: Guild;
+}
 
-  if (
-    await hasModError("Moderate Members", {
-      interaction,
-      user,
-      action: "Unmute",
-      errorOptions: { allErrors: false, botError: true, outsideError: true },
-    })
-  )
-    return;
+interface O {
+  title: string;
+  reason: string | null;
+}
+
+async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOutput<O>> {
+  const [ok, fail, options] = parameters;
+  const { target: targetUser, reason, guild } = options;
+  const target = await safeMember(guild, targetUser.id);
+
+  const error = await getModError("ModerateMembers", {
+    target: targetUser,
+    action: "UNMUTE",
+    errorOptions: { allErrors: false, botError: true, outsideError: true },
+  });
+
+  if (error) return fail(errorToFeature(error));
 
   if (!target?.isCommunicationDisabled())
-    return await errorEmbed({
-      interaction,
+    return fail({
       title: "You can’t unmute this user.",
       reason: "The user was never muted.",
     });
 
   try {
     await target?.edit({ communicationDisabledUntil: null });
-    return await modEmbed({
-      interaction,
-      user,
-      action: "Unmuted",
-      shouldDm: true,
-      dbAction: "UNMUTE",
-      isSilent,
+    return ok({
+      title: `Unmuted ${target.user.username}`,
       reason,
     });
   } catch (error) {
-    await errorEmbed({ interaction, error, forward: true, fileName: "unmute" });
+    return fail(errorToFeature(error));
   }
 }
+
+export const unmute = feature("mod/unmute", method);

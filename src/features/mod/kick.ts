@@ -1,41 +1,44 @@
-import type { User } from "discord.js";
-import { errorEmbed } from "embeds/errorEmbed";
-import { hasModError, modEmbed } from "embeds/modEmbed";
+import type { Guild, User } from "discord.js";
+import { getModError } from "embeds/modEmbed";
+import type { FeatureOutput } from "types";
+import { errorToFeature } from "utils/errorType";
+import { feature, type MethodParameters } from "utils/feature";
 import { safeMember } from "utils/safeThings";
-import type { SafeChatInteraction } from "types";
 
-export async function kick(
-  interaction: SafeChatInteraction,
-  options: {
-    user: User;
-    reason: string | null;
-    isSilent: boolean;
-  },
-) {
-  const { isSilent, user, reason } = options;
+interface P {
+  target: User;
+  moderator: User;
+  reason: string | null;
+  guild: Guild;
+  isSilent: boolean;
+}
 
-  if (
-    await hasModError("Kick Members", {
-      interaction,
-      user,
-      action: "Kick",
-      errorOptions: { allErrors: true, botError: true, outsideError: true },
-    })
-  )
-    return;
+interface O {
+  title: string;
+  reason: string | null;
+}
+
+async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOutput<O>> {
+  const [ok, fail, options] = parameters;
+  const { target, guild, reason } = options;
+
+  const error = await getModError("KickMembers", {
+    target,
+    action: "KICK",
+    errorOptions: { allErrors: true, botError: true, outsideError: true },
+  });
+
+  if (error) return fail(errorToFeature(error));
 
   try {
-    await (await safeMember(interaction.guild, user.id)).kick(reason ?? undefined);
-    return await modEmbed({
-      interaction,
-      user,
-      action: "Kicked",
-      shouldDm: true,
-      dbAction: "KICK",
-      isSilent,
+    await (await safeMember(guild, target.id)).kick(reason ?? undefined);
+    return ok({
+      title: "Kicked",
       reason,
     });
   } catch (error) {
-    return await errorEmbed({ interaction, error, forward: true, fileName: "kick" });
+    return fail(errorToFeature(error));
   }
 }
+
+export const kick = feature("mod/kick", method);

@@ -1,5 +1,6 @@
 import { SlashCommandSubcommandBuilder, type ChatInputCommandInteraction } from "discord.js";
-import { useErrorEmbed } from "embeds/errorEmbed";
+import { buildErrorEmbed, useErrorEmbed } from "embeds/errorEmbed";
+import { buildModEmbed } from "embeds/modEmbed";
 import ms from "enhanced-ms";
 import { ban } from "features/mod/ban";
 import { assertInteraction } from "types";
@@ -33,9 +34,9 @@ export const data = new SlashCommandSubcommandBuilder()
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   assertInteraction(interaction);
 
-  const user = interaction.options.getUser("user", true);
+  const target = interaction.options.getUser("user", true);
   const duration = interaction.options.getString("duration");
-  const reason = interaction.options.getString("reason") ?? undefined;
+  const reason = interaction.options.getString("reason");
   const del = interaction.options.getString("del");
 
   let durationMillisec: number | undefined;
@@ -46,7 +47,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     if (!durationMillisec || durationMillisec <= 0)
       return await useErrorEmbed({
         interaction,
-        title: `You can’t ban ${user.username} temporarily.`,
+        title: `You can’t ban ${target.username} temporarily.`,
         reason: "The duration is invalid.",
       });
   }
@@ -57,23 +58,37 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     if (!delMessageSeconds || delMessageSeconds <= 0)
       return await useErrorEmbed({
         interaction,
-        title: `The bot can’t remove messages of ${user.username} while banning.`,
+        title: `The bot can’t remove messages of ${target.username} while banning.`,
         reason: "The duration is invalid.",
       });
 
     if (delMessageSeconds > SECONDS_7D)
       return await useErrorEmbed({
         interaction,
-        title: `The bot can’t remove messages of ${user.username} while banning.`,
+        title: `The bot can’t remove messages of ${target.username} while banning.`,
         reason: "The duration is longer than 7 days.",
       });
   }
 
-  return await ban(interaction, {
+  const isSilent = await shouldModerateSilently(interaction);
+
+  const result = await ban({
     delMessageSeconds,
-    user,
+    target,
     reason,
+    guild: interaction.guild,
+    moderator: interaction.user,
     durationMillisec,
-    isSilent: await shouldModerateSilently(interaction),
+    isSilent,
   });
+
+  if (result.success)
+    await interaction.reply({
+      flags: isSilent ? ["IsComponentsV2", "Ephemeral"] : "IsComponentsV2",
+      components: [await buildModEmbed(result.out)],
+    });
+  else {
+    await useErrorEmbed({ interaction, ...result.out });
+  }
+  return;
 }
