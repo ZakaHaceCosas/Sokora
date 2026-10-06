@@ -2,14 +2,18 @@ import type { ChartConfiguration } from "chart.js";
 import { ChartJSNodeCanvas } from "chartjs-node-canvas";
 import { compile } from "mathjs";
 import type { FeatureOutput } from "types";
+import { feature, type MethodParameters } from "utils/feature";
 
-export async function graph(options: {
+interface P {
   function: string;
   xmin: number;
   xmax: number;
   ymin: number;
   ymax: number;
-}): Promise<FeatureOutput<Buffer>> {
+}
+
+async function method(...parameters: MethodParameters<P, Buffer>): Promise<FeatureOutput<Buffer>> {
+  const [ok, fail, options] = parameters;
   const { xmin, xmax, ymin, ymax } = options;
 
   try {
@@ -92,20 +96,13 @@ export async function graph(options: {
       },
     };
 
-    return {
-      success: true,
-      feature: "math/graph",
-      out: await chartJSNodeCanvas.renderToBuffer(config),
-    };
+    return ok(await chartJSNodeCanvas.renderToBuffer(config));
   } catch {
-    return {
-      success: false,
-      feature: "math/graph",
-      out: {
-        title: "Invalid function.",
-        reason:
-          'Please provide a valid mathematical function. Examples: "x^2", "sin(x)", "2*x + 1".',
-      },
-    };
+    return fail({
+      title: "Invalid function.",
+      reason: 'Please provide a valid mathematical function. Examples: "x^2", "sin(x)", "2*x + 1".',
+    });
   }
 }
+
+export const graph = feature("math/graph", method);

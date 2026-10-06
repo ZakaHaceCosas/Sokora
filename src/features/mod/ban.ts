@@ -8,9 +8,6 @@ import { feature, type MethodParameters } from "utils/feature";
 import { safeMembers } from "utils/safeThings";
 import { scheduleUnban } from "utils/unbanScheduler";
 
-// TODO: (for all P too)
-// i removed isSilent bc i thought of keeping it view-sided, but only now i remembered that logging is controller-sided
-// so yeah i should re-add it (whenever i actually add logging to features, which is not now somehow)
 interface P {
   isSilent: boolean;
   guild: Guild;

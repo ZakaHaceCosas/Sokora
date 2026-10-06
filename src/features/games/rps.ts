@@ -30,6 +30,7 @@ function getWinner(choice1: RPSChoice, choice2: RPSChoice): 0 | 1 | 2 {
     : 2;
 }
 
+// TODO: new feature() system doesn't really cover interaction-dependant features
 export async function rps(
   interaction: SafeChatInteraction,
   options: {

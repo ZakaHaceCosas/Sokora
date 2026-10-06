@@ -20,7 +20,7 @@ export const data = new SlashCommandSubcommandBuilder()
 
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   const expression = interaction.options.getString("expression", true);
-  const result = calc({ expression });
+  const result = await calc({ expression });
 
   if (!result.success)
     return await useErrorEmbed({

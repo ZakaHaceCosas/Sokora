@@ -2,8 +2,6 @@ import {
   ChannelType,
   SlashCommandSubcommandBuilder,
   type ChatInputCommandInteraction,
-  type InteractionResponse,
-  type Message,
 } from "discord.js";
 import { useErrorEmbed } from "embeds/errorEmbed";
 import { buildModEmbed } from "embeds/modEmbed";
@@ -40,9 +38,7 @@ export const data = new SlashCommandSubcommandBuilder()
     user.setName("reason").setDescription("The reason for clearing the messages."),
   );
 
-export async function run(
-  interaction: ChatInputCommandInteraction,
-): Promise<Message | InteractionResponse | undefined> {
+export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
   assertInteraction(interaction);
 
   const reason = interaction.options.getString("reason");
