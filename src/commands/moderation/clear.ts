@@ -49,15 +49,7 @@ export async function run(
   const channelOption = interaction.options.getChannel("channel");
   let channel = await safeChannel(interaction.guild, interaction.channel.id);
   if (channelOption) channel = await safeChannel(interaction.guild, channelOption.id);
-
-  const amount = interaction.options.getNumber("amount");
-  if (!amount)
-    return await useErrorEmbed({
-      interaction,
-      title: "No amount provided.",
-      reason:
-        "You somehow ran the command without an amount being provided. That is an error. You might want to report this, as it is not supposed to ever happen.",
-    });
+  const amount = interaction.options.getNumber("amount", true);
 
   const targetUser = interaction.options.getUser("user") ?? undefined;
   if (!channel.isTextBased() || channel.isDMBased())
@@ -71,6 +63,7 @@ export async function run(
     amount,
     reason,
     channel,
+    moderator: interaction.user,
   });
 
   if (result.success)

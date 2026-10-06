@@ -155,14 +155,14 @@ function loop(
     assertImporter(key);
 
     if (!["m", "o", "c"].includes(subKey))
-      throw new InterkoraError('operand is not any of "m","o","c"', Errors.InvalidSeq);
+      throw new InterkoraError('operand is not any of "m","o","c"', "InvalidSeq");
 
     const [pV1, pV2] = (preValue ?? "").split(":", 2);
-    if (!pV1 || !pV2) throw new InterkoraError("missing arguments", Errors.InvalidSeq);
+    if (!pV1 || !pV2) throw new InterkoraError("missing arguments", "InvalidSeq");
     if (!["MEE6", "TATSU", "AMARI", "LURKR"].includes(pV1))
       throw new InterkoraError(
         `${pV1} is not valid, use any of "MEE6", "TATSU", "AMARI", "LURKR" (all uppercase)`,
-        Errors.InvalidSeq,
+        "InvalidSeq",
       );
 
     return {
@@ -358,7 +358,10 @@ function loop(
 export async function buildPayloadFromMessage(
   message: SafeMessage,
 ): Promise<InterkoraPayload | InterkoraPayloadIssue> {
-  const entity = await resolveEntity(message);
+  const entity = await resolveEntity(message.author.id, message, message.guild);
+
+  if (!entity) throw new Error("where the fuck is the entity");
+
   const isEnabled = await getSetting(message.guild.id, "interkora", "enabled");
   const whitelist = await getSetting(message.guild.id, "interkora", entity.correspondingWhitelist);
   const isAllowed = isEntityAllowed({
@@ -372,7 +375,7 @@ export async function buildPayloadFromMessage(
     return {
       entity,
       gid: message.guildId,
-      effective: EffectiveStatus.Requested,
+      // TODO : ???
     };
   }
 
@@ -380,16 +383,20 @@ export async function buildPayloadFromMessage(
     return {
       entity,
       gid: message.guildId,
-      effective: EffectiveStatus.Disabled,
-      errorMessage: "Not enabled.",
+      effective: {
+        effectiveName: "Disabled",
+        message: "Not enabled.",
+      },
     };
 
   if (!isAllowed)
     return {
       entity,
       gid: message.guildId,
-      effective: EffectiveStatus.EPNoPermission,
-      errorMessage: `At ${mention(Date.now(), "DEFAULT_TIMESTAMP")}, unauthorized user/application ${mention(message.author.id, "USER")} attempted to run Interkora commands.`,
+      effective: {
+        effectiveName: "NoPermission",
+        message: `At ${mention(Date.now(), "DEFAULT_TIMESTAMP")}, unauthorized user/application ${mention(message.author.id, "USER")} attempted to run Interkora commands.`,
+      },
     };
 
   let queryGuildId = message.guildId;
@@ -437,7 +444,9 @@ export async function buildPayloadFromMessage(
               gid: queryGuildId,
               errorMessage: `Guild ${newGuildId} does not exist OR does not have Interkora enabled.`,
               entity,
-              effective: EffectiveStatus.EEInvalidSeq | Order.Query,
+              effective: {
+                effectiveName: "InvalidSeq",
+              },
             };
 
           queryGuildId = newGuildId;
@@ -467,7 +476,7 @@ export async function buildPayloadFromMessage(
     } catch (error) {
       if (error instanceof InterkoraError)
         return {
-          effective: error.effectiveError,
+          effective: error,
           gid: queryGuildId,
           entity,
           errorMessage: `Interkora error\nSeq ${index}\nErr [${error.cause}]: ${error.message}.`,
@@ -481,7 +490,7 @@ export async function buildPayloadFromMessage(
     payload.actualPayload.queries.length > 10 ||
     payload.actualPayload.imports.length > 10
     ? {
-        effective: EffectiveStatus.EESeqSz,
+        effective: { effectiveName: "SeqSz" },
         gid: message.guildId,
         entity,
         errorMessage: `Interkora error\nSingle message sequence is too large (exceeds 10 Interkora calls of the same kind message).\nOptimize calls or split into multiple messages.`,

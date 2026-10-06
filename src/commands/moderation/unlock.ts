@@ -5,8 +5,10 @@ import {
   type InteractionResponse,
   type Message,
 } from "discord.js";
-import { unlock } from "src/features/mod/unlock";
-import { assertInteraction } from "src/types";
+import { useErrorEmbed } from "embeds/errorEmbed";
+import { buildModEmbed } from "embeds/modEmbed";
+import { unlock } from "features/mod/unlock";
+import { assertInteraction } from "types";
 import { safeChannel } from "utils/safeThings";
 
 export const data = new SlashCommandSubcommandBuilder()
@@ -37,8 +39,20 @@ export async function run(
   let channel = await safeChannel(interaction.guild, interaction.channel.id);
   if (channelOption) channel = await safeChannel(interaction.guild, channelOption.id);
 
-  return await unlock(interaction, {
+  const result = await unlock({
     channel,
     reason,
+    guild: interaction.guild,
+    moderator: interaction.user,
   });
+
+  if (result.success)
+    await interaction.reply({
+      flags: ["IsComponentsV2", "Ephemeral"],
+      components: [await buildModEmbed(result.out)],
+    });
+  else {
+    await useErrorEmbed({ interaction, ...result.out });
+  }
+  return;
 }

@@ -1,7 +1,7 @@
 import { createCase } from "database/moderation";
 import type { Channel, Guild, User } from "discord.js";
 import { getModError } from "embeds/modEmbed";
-import type { FeatureOutput } from "types";
+import type { FeatureOutput, ModActionResult } from "types";
 import { errorToFeature } from "utils/errorType";
 import { feature, type MethodParameters } from "utils/feature";
 
@@ -12,12 +12,9 @@ interface P {
   reason: string | null;
 }
 
-interface O {
-  title: string;
-  reason: string | null;
-}
-
-async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOutput<O>> {
+async function method(
+  ...parameters: MethodParameters<P, ModActionResult>
+): Promise<FeatureOutput<ModActionResult>> {
   const [ok, fail, options] = parameters;
   const { guild, channel, moderator, reason } = options;
 
@@ -39,21 +36,23 @@ async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOut
       reason: "The channel is not locked.",
     });
 
-  try {
-    await channel.permissionOverwrites.create(guild.id, {
-      SendMessages: null,
-      SendMessagesInThreads: null,
-      CreatePublicThreads: null,
-      CreatePrivateThreads: null,
-    });
-    await createCase(guild, channel, "UNLOCK", moderator, reason);
-    return ok({
-      title: "Unlocked channel.",
-      reason,
-    });
-  } catch (error) {
-    return fail(errorToFeature(error));
-  }
+  await channel.permissionOverwrites.create(guild.id, {
+    SendMessages: null,
+    SendMessagesInThreads: null,
+    CreatePublicThreads: null,
+    CreatePrivateThreads: null,
+  });
+  const caseId = await createCase(guild, channel, "UNLOCK", moderator, reason);
+  return ok({
+    title: "Unlocked channel.",
+    reason,
+    channel,
+    error: null,
+    moderator,
+    caseId,
+    guild,
+    action: "UNLOCK",
+  });
 }
 
 export const unlock = feature("mod/unlock", method);

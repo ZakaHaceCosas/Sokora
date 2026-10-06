@@ -47,34 +47,30 @@ async function method(
 
   if (error) return fail(errorToFeature(error));
 
-  try {
-    await guild.members.ban(target.id, {
-      reason: reason ?? undefined,
-      deleteMessageSeconds: delMessageSeconds,
-    });
+  await guild.members.ban(target.id, {
+    reason: reason ?? undefined,
+    deleteMessageSeconds: delMessageSeconds,
+  });
 
-    const caseId = await createCase(guild, target, "BAN", moderator, reason);
+  const caseId = await createCase(guild, target, "BAN", moderator, reason);
 
-    if (durationMillisec)
-      scheduleUnban(client, guild, target.id, moderator.id, durationMillisec, caseId);
+  if (durationMillisec)
+    scheduleUnban(client, guild, target.id, moderator.id, durationMillisec, caseId);
 
-    return ok({
-      error: null,
-      target,
-      guild,
-      moderator,
-      caseId,
-      action: "BAN",
-      duration: durationMillisec ?? undefined,
-      shouldDm: isMember,
-      expiresAt: durationMillisec ? new Date(durationMillisec) : undefined,
-      isSilent,
-      reason,
-      title: `Banned ${target.username}.`,
-    });
-  } catch (error) {
-    return fail(errorToFeature(error));
-  }
+  return ok({
+    error: null,
+    target,
+    guild,
+    moderator,
+    caseId,
+    action: "BAN",
+    duration: durationMillisec ?? undefined,
+    shouldDm: isMember,
+    expiresAt: durationMillisec ? new Date(durationMillisec) : undefined,
+    isSilent,
+    reason,
+    title: `Banned ${target.username}.`,
+  });
 }
 
 export const ban = feature("mod/ban", method);

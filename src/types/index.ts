@@ -134,17 +134,26 @@ export interface GHCommit {
 
 /// MODERATION TYPES
 
-export interface ModActionPayload {
-  action: ModType;
+export type ModActionPayload = {
   guild: Guild;
-  channel?: Channel;
   moderator: User;
-  target?: User;
   duration?: number;
   shouldDm?: boolean;
   expiresAt?: Date;
   previousCaseId?: number;
-}
+} & (
+  | {
+      action: Exclude<ModType, "CLEAR" | "LOCK" | "UNLOCK" | "SLOWDOWN">;
+      target: User;
+      channel?: Channel;
+      isSilent: boolean;
+    }
+  | {
+      action: "CLEAR" | "LOCK" | "UNLOCK" | "SLOWDOWN";
+      target?: undefined;
+      channel: Channel;
+    }
+);
 
 export enum ModErrorCode {
   CaseDoesNotExist,
@@ -188,7 +197,6 @@ export type ModActionResult = ModActionPayload & {
   previousCaseId?: number;
   title: string;
   reason: string | null;
-  isSilent: boolean;
 };
 
 /// FEATURE TYPES

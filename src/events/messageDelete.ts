@@ -46,7 +46,6 @@ export default (async function run(message) {
         client,
         error,
         title: "Error fetching meta image.",
-        forward: true,
         fileName: "messageDelete",
       });
     }

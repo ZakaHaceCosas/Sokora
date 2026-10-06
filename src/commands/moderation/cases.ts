@@ -51,6 +51,7 @@ async function generateContainer(options: {
     BAN: "🔨",
     // TODO: better emoji for unban
     UNBAN: "🔓",
+    CLEAR: "🧹",
     LOCK: "🔒",
     UNLOCK: "🔓",
     SLOWDOWN: "⏳",

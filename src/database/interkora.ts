@@ -1,6 +1,7 @@
 import { getSetting, setSetting } from "database/settings";
 import { db } from "database/index";
 import type { TableDefinition, TypeOfDefinition, Satisfies } from "types";
+import type { ResolvedEntity } from "api/v1";
 
 type RequestorsDef = Satisfies<
   TableDefinition,
@@ -87,6 +88,13 @@ export async function addRequestor(
   await db`INSERT INTO itk_requestors ("guild_id", "entity_id", "entity_type") VALUES (${guild_id}, ${entity_id}, ${entity_type});`;
 }
 
-export async function getEntityPermission(): Promise<void> {
-  await fetch("");
+// TODO:
+// merge this with getRegistration, properly type the payload(OBJECT)
+export async function getEntityPermissions(
+  guildId: string,
+  entId: string,
+): Promise<ResolvedEntity["effectivePermissions"]> {
+  // trash code to silence the compiler while i work on other things
+  await fetch(guildId + entId);
+  return "rwx";
 }

@@ -28,22 +28,19 @@ async function method(
 
   if (error) return fail(errorToFeature(error));
 
-  try {
-    await (await safeMember(guild, target.id)).kick(reason ?? undefined);
-    const caseId = await createCase(guild, target, "KICK", moderator, reason);
-    return ok({
-      title: `Kicked ${target.username}.`,
-      reason,
-      moderator,
-      guild,
-      action: "KICK",
-      isSilent,
-      error: null,
-      caseId,
-    });
-  } catch (error) {
-    return fail(errorToFeature(error));
-  }
+  await (await safeMember(guild, target.id)).kick(reason ?? undefined);
+  const caseId = await createCase(guild, target, "KICK", moderator, reason);
+  return ok({
+    title: `Kicked ${target.username}.`,
+    reason,
+    moderator,
+    guild,
+    action: "KICK",
+    target,
+    isSilent,
+    error: null,
+    caseId,
+  });
 }
 
 export const kick = feature("mod/kick", method);

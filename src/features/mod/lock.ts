@@ -36,33 +36,29 @@ async function method(
       reason: "The channel is already locked.",
     });
 
-  try {
-    // TODO (for all features)
-    // promise.all everywhere
-    // createCase everywhere
-    const [, caseId] = await Promise.all([
-      channel.permissionOverwrites.create(guild.id, {
-        SendMessages: false,
-        SendMessagesInThreads: false,
-        CreatePublicThreads: false,
-        CreatePrivateThreads: false,
-      }),
-      createCase(guild, channel, "LOCK", moderator, reason),
-    ]);
+  // TODO (for all features)
+  // promise.all everywhere
+  // createCase everywhere
+  const [, caseId] = await Promise.all([
+    channel.permissionOverwrites.create(guild.id, {
+      SendMessages: false,
+      SendMessagesInThreads: false,
+      CreatePublicThreads: false,
+      CreatePrivateThreads: false,
+    }),
+    createCase(guild, channel, "LOCK", moderator, reason),
+  ]);
 
-    return ok({
-      title: "Locked a channel",
-      reason,
-      caseId,
-      error: null,
-      moderator,
-      guild,
-      action: "LOCK",
-      target: channel,
-    });
-  } catch (error) {
-    return fail(errorToFeature(error));
-  }
+  return ok({
+    title: "Locked a channel",
+    reason,
+    caseId,
+    error: null,
+    moderator,
+    guild,
+    action: "LOCK",
+    channel,
+  });
 }
 
 export const lock = feature("mod/lock", method);

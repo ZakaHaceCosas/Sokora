@@ -38,11 +38,7 @@ async function method(
       title: `There is no warning with the id of ${warnId}.`,
     });
 
-  try {
-    await removeCase(guild.id, warnId);
-  } catch (error) {
-    return fail(errorToFeature(error));
-  }
+  await removeCase(guild.id, warnId);
 
   return ok({
     title: `Removed a warning from ${mention(target.id, "USER")}`,

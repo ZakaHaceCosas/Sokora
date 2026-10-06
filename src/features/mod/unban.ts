@@ -27,22 +27,19 @@ async function method(
 
   if (error) return fail(errorToFeature(error));
 
-  try {
-    await guild.members.unban(target.id, reason ?? undefined);
-    const caseId = await createCase(guild, target, "UNBAN", moderator, reason);
-    return ok({
-      title: "Unbanned user.",
-      reason,
-      isSilent,
-      moderator,
-      guild,
-      action: "UNBAN",
-      caseId,
-      error: null,
-    });
-  } catch (error) {
-    return fail(errorToFeature(error));
-  }
+  await guild.members.unban(target.id, reason ?? undefined);
+  const caseId = await createCase(guild, target, "UNBAN", moderator, reason);
+  return ok({
+    title: "Unbanned user.",
+    reason,
+    isSilent,
+    moderator,
+    guild,
+    action: "UNBAN",
+    target,
+    caseId,
+    error: null,
+  });
 }
 
 export const unban = feature("mod/unban", method);

@@ -9,7 +9,6 @@ import ms from "enhanced-ms";
 import { slowdown } from "features/mod/slowdown";
 import { assertInteraction } from "types";
 import { safeChannel } from "utils/safeThings";
-import { shouldModerateSilently } from "utils/silent";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("slowdown")
@@ -58,20 +57,17 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
   const timeMillisec = ms(time) ?? 0;
   const reason = interaction.options.getString("reason");
 
-  const isSilent = await shouldModerateSilently(interaction);
-
   const result = await slowdown({
     timeMillisec,
     reason,
     channel,
-    isSilent,
     moderator: interaction.user,
     guild: interaction.guild,
   });
 
   if (result.success)
     await interaction.reply({
-      flags: isSilent ? ["IsComponentsV2", "Ephemeral"] : "IsComponentsV2",
+      flags: ["IsComponentsV2", "Ephemeral"],
       components: [await buildModEmbed(result.out)],
     });
   else {

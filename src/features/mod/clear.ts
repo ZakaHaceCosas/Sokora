@@ -1,3 +1,4 @@
+import { createCase } from "database/moderation";
 import type {
   NewsChannel,
   PrivateThreadChannel,
@@ -55,39 +56,37 @@ async function method(
 
   let deletedAmount = 0;
 
-  try {
-    if (targetUser) {
-      const userMessages = (await channel.messages.fetch({ limit: 100 }))
-        .filter(m => m.author.id == targetUser.id && !m.partial)
-        .first(amount);
+  if (targetUser) {
+    const userMessages = (await channel.messages.fetch({ limit: 100 }))
+      .filter(m => m.author.id == targetUser.id && !m.partial)
+      .first(amount);
 
-      if (userMessages.length === 0)
-        return fail({
-          title: "No messages found.",
-          reason: "No messages from this user were found in the recent history.",
-        });
+    if (userMessages.length === 0)
+      return fail({
+        title: "No messages found.",
+        reason: "No messages from this user were found in the recent history.",
+      });
 
-      await channel.bulkDelete(userMessages, true);
-      deletedAmount = userMessages.length;
-    } else {
-      await channel.bulkDelete(amount, true).then(messages => (deletedAmount = messages.size));
+    await channel.bulkDelete(userMessages, true);
+    deletedAmount = userMessages.length;
+  } else {
+    await channel.bulkDelete(amount, true).then(messages => (deletedAmount = messages.size));
 
-      if (deletedAmount == 0)
-        return fail({
-          title: "No messages found.",
-          reason: "No messages were found in the recent history.",
-        });
-    }
-  } catch (error) {
-    return fail(errorToFeature(error));
+    if (deletedAmount == 0)
+      return fail({
+        title: "No messages found.",
+        reason: "No messages were found in the recent history.",
+      });
   }
 
-  // TODO: this is annoyingly wrong ASÑDJASPODUYA)"Y/"
+  const caseId = await createCase(channel.guild, channel, "CLEAR", moderator, reason);
+
   return ok({
     error: null,
     guild: channel.guild,
     action: "CLEAR",
-    target: channel,
+    channel,
+    caseId,
     moderator,
     title: `Cleared ${deletedAmount} ${pluralOrNot("message", deletedAmount)}${targetUser ? ` from ${mention(targetUser.id, "USER")}` : ""}`,
     reason,

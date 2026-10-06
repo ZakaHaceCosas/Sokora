@@ -22,6 +22,7 @@ import {
   SeparatorBuilder,
   type Guild,
   type ButtonInteraction,
+  GuildMember,
 } from "discord.js";
 import type { SettingReturnType, SettingKeyFor } from "types";
 import { mention } from "utils/mention";
@@ -32,8 +33,15 @@ import { getCase, listUserCases, listGuildCases } from "database/moderation";
 import { fetchServerboard, getServerboardEntry } from "database/serverboard";
 import { buildLeveler, getGuildLeaderboard, getUserXp } from "database/leveling";
 import { getLatestNews, getNews } from "database/news";
-import { addWhitelist, getRequestors, addRequestor, remWhitelist } from "database/interkora";
+import {
+  addWhitelist,
+  getRequestors,
+  addRequestor,
+  remWhitelist,
+  getEntityPermissions,
+} from "database/interkora";
 import { Supported, type SupportedAndRewarded } from "@subetedesu/honlvlimport";
+import { client } from "botfile";
 
 export const COMMANDS = ["set", "reset", "drop", "get", "query", "import"] as const;
 type COMMAND = (typeof COMMANDS)[number];
@@ -54,13 +62,15 @@ export const CLAUSES = [
   "get-ent",
   "get-req",
 ] as const;
-export const ERROR_CODES = ["InvalidSeq", "InvalidOrder"] as const;
+export const ERROR_CODES = ["InvalidSeq", "InvalidOrder", "SeqSz", "Disabled"] as const;
 export type ERROR_CODE = (typeof ERROR_CODES)[number];
 
 export type CmpOperand = ">" | "<" | ">=" | "<=";
 export type PagingOperand = "-" | "+";
 export type SupportedRetrievalFormats = "json" | "yaml";
 
+// TODO: ???????????????????????
+// i need to redesign interkora json and types AGAIN
 interface InterkoraErrorJson {
   effectiveStack: string;
   effectiveName: ERROR_CODE;
@@ -464,7 +474,7 @@ async function runImport(o: ParsedImport): Promise<string> {
   return o.action.operand === "c" ? codeBlock("yaml", Bun.YAML.stringify(content)) : "TODO";
 }
 
-async function runQuery(out: ParsedQueryOperand, client: Client): Promise<string> {
+async function runQuery(out: ParsedQueryOperand): Promise<string> {
   if (out.action.key === "reset-guild" || out.action.key === "set-guild") {
     console.warn("guild query operands leaking to interkora()");
     return "warning: guild query operands leaking to interkora()";
@@ -486,11 +496,12 @@ async function runQuery(out: ParsedQueryOperand, client: Client): Promise<string
     return `${out.action.operand}wl-${out.action.specifier}(@${out.gid})`;
   }
   if (out.action.key === "get-ent") {
-    const entity = await resolveEntity(out.action.specifier, undefined, client, out.gid);
+    const guild = await safeGuild(client, out.gid);
+    const entity = await resolveEntity(out.action.specifier, undefined, guild);
     if (!entity)
       throw new InterkoraError("Tried to query effective permissions of non-existant ID.");
 
-    return `Entity ${entity[0].userId} effective permission [${entity[0].effectivePermissionGrant}] is ${JSON.stringify(entity[0].effectivePermissions, null, 2)}`;
+    return `Entity ${entity.userId} effective permission [${entity.effectivePermissionGrant}] is ${JSON.stringify(entity.effectivePermissions, null, 2)}`;
   }
   if (out.action.key === "get-req") {
     const reqs = await getRequestors(out.gid, out.action.specifier);
@@ -539,7 +550,7 @@ export interface ResolvedEntity {
   avatarURL: string | undefined;
   hasAdminPermission: boolean;
   correspondingWhitelist: "whitelist" | "webhook_whitelist";
-  effectivePermissions: Record<COMMAND, "r" | "x"> | "r" | "rw" | "rwx";
+  effectivePermissions: Record<COMMAND, "r" | "x"> | "r" | "rw" | "rwx" | "/";
   /** Owner, Admin, Granted, Unauth… */
   effectivePermissionGrant: "o" | "a" | "g" | "u";
 }
@@ -547,10 +558,8 @@ export interface ResolvedEntity {
 export async function resolveEntity(
   id: string,
   message: SafeMessage | undefined,
-  client: Client,
-  guildId: string,
-): Promise<[ResolvedEntity, Guild] | undefined> {
-  const guild = message ? message.guild : await safeGuild(client, guildId);
+  guild: Guild,
+): Promise<ResolvedEntity | undefined> {
   const userMember = message ? message.member : await safeMember(guild, id).catch(() => null);
   const webhook = guild
     ? message
@@ -564,10 +573,10 @@ export async function resolveEntity(
     (member instanceof Webhook ? member.avatarURL() : member.displayAvatarURL()) ?? undefined;
   const userId = typeof member === "string" ? member : member.id;
   const hasAdminPermission: boolean =
-    member instanceof Webhook ? false : member.permissions.has("Administrator");
+    member instanceof GuildMember && member.permissions.has("Administrator");
   const correspondingWhitelist = member instanceof Webhook ? "webhook_whitelist" : "whitelist";
 
-  const whitelist = await getSetting(guildId, "interkora", correspondingWhitelist);
+  const whitelist = await getSetting(guild.id, "interkora", correspondingWhitelist);
 
   const effectivePermissionGrant =
     id === guild.ownerId ? "o" : hasAdminPermission ? "a" : whitelist.includes(id) ? "g" : "u";
@@ -576,19 +585,16 @@ export async function resolveEntity(
       ? "rwx"
       : effectivePermissionGrant === "u"
         ? "/"
-        : await getEntityPermissions(guildId, id);
+        : await getEntityPermissions(guild.id, id);
 
-  return [
-    {
-      avatarURL,
-      userId,
-      correspondingWhitelist,
-      hasAdminPermission,
-      effectivePermissionGrant,
-      effectivePermissions,
-    },
-    guild,
-  ];
+  return {
+    avatarURL,
+    userId,
+    correspondingWhitelist,
+    hasAdminPermission,
+    effectivePermissionGrant,
+    effectivePermissions,
+  };
 }
 
 const isIssue = (

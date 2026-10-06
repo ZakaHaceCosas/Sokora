@@ -4,6 +4,7 @@ import type {
   PrimitiveFeatureError,
   PrimitiveFeatureSuccess,
 } from "types";
+import { errorToFeature } from "./errorType";
 
 type MethodType<P, O> = (
   ok: (s: O) => PrimitiveFeatureSuccess<O>,
@@ -25,7 +26,7 @@ export function feature<P, O>(
     };
   };
 
-  const error = <F>(f: F): PrimitiveFeatureError<F> => {
+  const fail = <F>(f: F): PrimitiveFeatureError<F> => {
     return {
       success: false,
       feature: featureName,
@@ -34,6 +35,10 @@ export function feature<P, O>(
   };
 
   return async function (options: P): Promise<FeatureOutput<O>> {
-    return await method(ok, error, options);
+    try {
+      return await method(ok, fail, options);
+    } catch (error) {
+      return fail(errorToFeature(error));
+    }
   };
 }

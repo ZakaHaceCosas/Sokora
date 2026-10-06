@@ -9,7 +9,6 @@ import { feature, type MethodParameters } from "utils/feature";
 
 interface P {
   guild: Guild;
-  isSilent: boolean;
   moderator: User;
   timeMillisec: number;
   reason: string | null;
@@ -20,7 +19,7 @@ async function method(
   ...parameters: MethodParameters<P, ModActionResult>
 ): Promise<FeatureOutput<ModActionResult>> {
   const [ok, fail, options] = parameters;
-  const { timeMillisec, reason, channel, guild, moderator, isSilent } = options;
+  const { timeMillisec, reason, channel, guild, moderator } = options;
 
   const error = await getModError("ManageChannels", {
     channel,
@@ -47,8 +46,8 @@ async function method(
       ? `Set the slowdown to ${ms(timeMillisec, "fullPrecision")}`
       : "Removed the slowdown",
     reason,
-    isSilent,
     moderator,
+    channel,
     guild,
     error: null,
     action: "SLOWDOWN",

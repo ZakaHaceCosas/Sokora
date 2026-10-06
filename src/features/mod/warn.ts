@@ -1,7 +1,7 @@
 import { createCase } from "database/moderation";
 import type { Guild, User } from "discord.js";
 import { getModError } from "embeds/modEmbed";
-import type { FeatureOutput } from "types";
+import type { FeatureOutput, ModActionResult } from "types";
 import { errorToFeature } from "utils/errorType";
 import { feature, type MethodParameters } from "utils/feature";
 
@@ -13,14 +13,11 @@ interface P {
   guild: Guild;
 }
 
-interface O {
-  title: string;
-  reason: string | null;
-}
-
-async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOutput<O>> {
+async function method(
+  ...parameters: MethodParameters<P, ModActionResult>
+): Promise<FeatureOutput<ModActionResult>> {
   const [ok, fail, options] = parameters;
-  const { reason, moderator, target, guild } = options;
+  const { reason, moderator, target, guild, isSilent } = options;
 
   const error = await getModError("ModerateMembers", {
     target,
@@ -30,11 +27,18 @@ async function method(...parameters: MethodParameters<P, O>): Promise<FeatureOut
 
   if (error) return fail(errorToFeature(error));
 
-  await createCase(guild, target, "WARN", moderator, reason);
+  const caseId = await createCase(guild, target, "WARN", moderator, reason);
 
   return ok({
     title: `warned ${target.username}`,
     reason,
+    moderator,
+    target,
+    error: null,
+    caseId,
+    guild,
+    action: "WARN",
+    isSilent,
   });
 }
 

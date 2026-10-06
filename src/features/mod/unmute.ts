@@ -35,23 +35,19 @@ async function method(
       reason: "The user was never muted.",
     });
 
-  try {
-    await target?.edit({ communicationDisabledUntil: null });
-    const caseId = await createCase(guild, targetUser, "UNMUTE", moderator, reason);
-    return ok({
-      action: "UNMUTE",
-      moderator,
-      guild,
-      target: targetUser,
-      title: `Unmuted ${target.user.username}`,
-      reason,
-      isSilent,
-      caseId,
-      error: null,
-    });
-  } catch (error) {
-    return fail(errorToFeature(error));
-  }
+  await target?.edit({ communicationDisabledUntil: null });
+  const caseId = await createCase(guild, targetUser, "UNMUTE", moderator, reason);
+  return ok({
+    action: "UNMUTE",
+    moderator,
+    guild,
+    target: targetUser,
+    title: `Unmuted ${target.user.username}`,
+    reason,
+    isSilent,
+    caseId,
+    error: null,
+  });
 }
 
 export const unmute = feature("mod/unmute", method);

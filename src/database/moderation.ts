@@ -20,7 +20,7 @@ export type Case = Satisfies<
 >;
 
 export type ModType =
-  "MUTE" | "UNMUTE" | "WARN" | "KICK" | "BAN" | "UNBAN" | "LOCK" | "UNLOCK" | "SLOWDOWN";
+  "MUTE" | "UNMUTE" | "WARN" | "KICK" | "BAN" | "UNBAN" | "LOCK" | "UNLOCK" | "SLOWDOWN" | "CLEAR";
 
 export async function createCase(
   guild: Guild,

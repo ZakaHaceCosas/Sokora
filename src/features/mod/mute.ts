@@ -46,24 +46,21 @@ async function method(
     Date.parse(new Date().toISOString()) + Date.parse(new Date(durationMillisec).toISOString()),
   ).toISOString();
 
-  try {
-    await (
-      await safeMember(guild, target.id)
-    )?.edit({ communicationDisabledUntil: time, reason: reason ?? undefined });
-    const caseId = await createCase(guild, target, "MUTE", moderator, reason);
-    return ok({
-      title: `Muted ${target.username}.`,
-      reason,
-      caseId,
-      isSilent,
-      moderator,
-      guild,
-      action: "MUTE",
-      error: null,
-    });
-  } catch (error) {
-    return fail(errorToFeature(error));
-  }
+  await (
+    await safeMember(guild, target.id)
+  )?.edit({ communicationDisabledUntil: time, reason: reason ?? undefined });
+  const caseId = await createCase(guild, target, "MUTE", moderator, reason);
+  return ok({
+    title: `Muted ${target.username}.`,
+    reason,
+    caseId,
+    isSilent,
+    moderator,
+    guild,
+    target,
+    action: "MUTE",
+    error: null,
+  });
 }
 
 export const mute = feature("mod/mute", method);
