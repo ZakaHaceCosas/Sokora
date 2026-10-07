@@ -18,16 +18,14 @@ async function makeMessage(t: string): ReturnType<typeof buildPayloadFromMessage
 
 describe("interkora settings module", () => {
   test("interkora getters work", async () => {
-    const out = await Promise.all([
-      interkora(await makeMessage("soko!get settings leveling.enabled"), client),
-      interkora(await makeMessage("soko!get settings interkora"), client),
-      interkora(
-        await makeMessage(
-          "\n\n    soko!          get                     settings                leveling.enabled        \n\n",
-        ),
-        client,
+    const messages = await Promise.all([
+      makeMessage("soko!get settings leveling.enabled"),
+      makeMessage("soko!get settings interkora"),
+      await makeMessage(
+        "\n\n    soko!          get                     settings                leveling.enabled        \n\n",
       ),
     ]);
+    const out = await Promise.all(messages.map(async m => interkora(m, client)));
 
     expect(out).toEqual([
       {

@@ -36,24 +36,24 @@ interface HandlePagesOptions {
 export function pagedButtons(
   pages: number,
   argumentPage?: number,
-  isDisabled?: boolean,
+  isDisabled = false,
 ): ActionRowBuilder<ButtonBuilder> {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId("left")
       .setEmoji(replace("(leftArrow)"))
       .setStyle(ButtonStyle.Primary)
-      .setDisabled(isDisabled ?? false),
+      .setDisabled(isDisabled),
     new ButtonBuilder()
       .setCustomId("pagecount")
       .setLabel(`${argumentPage ? argumentPage + 1 : 1} of ${pages}`)
       .setStyle(ButtonStyle.Secondary)
-      .setDisabled(isDisabled ?? false),
+      .setDisabled(isDisabled),
     new ButtonBuilder()
       .setCustomId("right")
       .setEmoji(replace("(rightArrow)"))
       .setStyle(ButtonStyle.Primary)
-      .setDisabled(isDisabled ?? false),
+      .setDisabled(isDisabled),
   );
 }
 

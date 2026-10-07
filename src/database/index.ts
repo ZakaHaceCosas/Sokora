@@ -29,8 +29,8 @@ export function values<T = Record<string, unknown>>(
   ) as T[];
 }
 
-async function getHash(file: string, hashAlgo?: string): Promise<string> {
-  const hash = createHash(hashAlgo ?? "sha256");
+async function getHash(file: string, hashAlgo = "sha256"): Promise<string> {
+  const hash = createHash(hashAlgo);
   return new Promise((resolve, reject) => {
     const stream = fs.createReadStream(file);
     stream.on("data", data => hash.update(data));

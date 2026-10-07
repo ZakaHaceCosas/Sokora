@@ -67,7 +67,8 @@ export async function getServerboardEntry(
   options: ServerboardOptions,
 ): Promise<ServerboardEntryData> {
   const { guild, invite } = options;
-  const { premiumTier, premiumSubscriptionCount: boostCount } = guild;
+  const { premiumTier, premiumSubscriptionCount } = guild;
+  const boostCount = premiumSubscriptionCount ?? 0;
   const boosters = guild.members.cache.filter(member => member.premiumSince);
   const client = guild.client.user.id;
   const owner = await guild.fetchOwner();
@@ -164,7 +165,7 @@ export async function getServerboardEntry(
     memberCount: guild.memberCount,
     textChannelCount: channelSizes.text,
     voiceChannelCount: channelSizes.voice,
-    boostCount: boostCount ?? 0,
+    boostCount,
     channelCount: channelSizes.text + channelSizes.voice,
     boosterCount: boosters.size,
     roles: [

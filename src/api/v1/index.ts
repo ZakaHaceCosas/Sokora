@@ -81,10 +81,10 @@ export class InterkoraError extends Error {
   public effectiveStack: string;
   public effectiveName: ERROR_CODE;
 
-  constructor(message: string, effectiveName?: ERROR_CODE) {
+  constructor(message: string, effectiveName: ERROR_CODE = "InvalidSeq") {
     super(message);
     this.name = "InterkoraError";
-    this.effectiveName = effectiveName ?? "InvalidSeq";
+    this.effectiveName = effectiveName;
     this.effectiveStack = "TODO";
   }
 

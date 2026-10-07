@@ -50,8 +50,8 @@ async function setSettingPlease<K extends keyof TS, S extends SettingKeyFor<K>>(
     const member = await safeMember(interaction.guild, interaction.user.id);
     const previousValue = await getSetting(interaction.guild.id, key, setting);
     const def = getSettingDef(key, setting);
-    const fmt = (value_: unknown): string =>
-      def.type === "OBJECT" && def.iterable
+    const fmt = (value_: unknown): string => {
+      return def.type === "OBJECT" && def.iterable
         ? Bun.YAML.stringify(
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             (value_ as { $: string }[]).map(({ $, ...rest }) => rest),
@@ -59,6 +59,7 @@ async function setSettingPlease<K extends keyof TS, S extends SettingKeyFor<K>>(
             2,
           )
         : Bun.YAML.stringify(value_, null, 2);
+    };
 
     const oldString =
       previousValue === undefined || previousValue === null

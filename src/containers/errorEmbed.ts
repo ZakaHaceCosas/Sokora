@@ -325,6 +325,9 @@ async function buildInteractiveErrorEmbed(
  *
  * For predictable errors (e.g. ones related to user input), **use {@linkcode buildErrorEmbed} and manually send that instead**.
  *
+ * TODO: there's many cases where useErrorEmbed is used where it shouldn't (user errors that shouldn't be reported to us)
+ * have to manually review
+ *
  * @returns Void, all logic is self-contained.
  */
 export async function useErrorEmbed(options: Options): Promise<undefined> {

@@ -33,8 +33,8 @@
     "@typescript-eslint/eslint-plugin": "^8.71.0",
     "@typescript-eslint/parser": "^8.71.0",
     "bun-types": "^1.4.2",
-    "eslint": "^10.11.0",
-    "eslint-plugin-unicorn": "^76.0.0",
+    "eslint": "^10.12.0",
+    "eslint-plugin-unicorn": "^77.0.0",
     "prettier": "^3.9.9",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.71.0"

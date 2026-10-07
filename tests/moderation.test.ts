@@ -4,16 +4,22 @@ import { DEV_GUILD_ID, TESTER_USER_A, TESTER_USER_B } from "utils/constants";
 import { warn } from "features/mod/warn";
 import { getCase } from "database/moderation";
 
-if (!DEV_GUILD_ID || !TESTER_USER_A || !TESTER_USER_B) {
-  throw new Error("Required environment variables are not set");
-}
+const setup = async () => {
+  if (!DEV_GUILD_ID || !TESTER_USER_A || !TESTER_USER_B) {
+    throw new Error("Required environment variables are not set");
+  }
 
-const guild = await client.guilds.fetch(DEV_GUILD_ID);
-const moderator = await client.users.fetch(TESTER_USER_A);
-const target = await client.users.fetch(TESTER_USER_B);
+  return [
+    await client.guilds.fetch(DEV_GUILD_ID),
+    await client.users.fetch(TESTER_USER_A),
+    await client.users.fetch(TESTER_USER_B),
+  ] as const;
+};
 
 describe("moderation features", () => {
   test("warn feature works", async () => {
+    const [guild, moderator, target] = await setup();
+
     const result = await warn({
       guild,
       moderator,

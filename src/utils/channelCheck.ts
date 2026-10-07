@@ -15,6 +15,10 @@ import { mention } from "./mention";
 import type { SettingKeyFor } from "types";
 import { buildLogEmbed } from "embeds/logEmbed";
 
+function isValid(channel: Channel): channel is TextChannel | NewsChannel {
+  return channel.type == ChannelType.GuildText || channel.type == ChannelType.GuildAnnouncement;
+}
+
 /** Checks if a channel that the user specified as the value of any setting (moderation.channel for example) is valid.
  * "Valid" = Exists, is either a Text or News channel, and Sokora has the requested permissions for it (either send, view, or both).
  * @param options Options.
@@ -36,10 +40,6 @@ export async function channelCheck<K extends keyof TS>(options: {
     await dm?.send({ components: [container], flags: "IsComponentsV2" });
     await resetSetting(guild.id, setting.category, setting.setting);
     return false;
-  }
-
-  function isValid(channel: Channel): channel is TextChannel | NewsChannel {
-    return channel.type == ChannelType.GuildText || channel.type == ChannelType.GuildAnnouncement;
   }
 
   const container = await buildLogEmbed(

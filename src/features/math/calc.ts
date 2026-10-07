@@ -2,8 +2,6 @@ import { evaluate } from "mathjs";
 import type { FeatureOutput } from "types";
 import { feature, type MethodParameters } from "utils/feature";
 
-// TODO: actually, forced Promise, this one's not async yet feature() assumes all is async
-// have to check
 async function method(
   ...parameters: MethodParameters<{ expression: string }, number>
 ): Promise<FeatureOutput<number>> {
@@ -11,7 +9,7 @@ async function method(
   try {
     const result: unknown = evaluate(options.expression);
     if (typeof result != "number" || Number.isNaN(result) || !Number.isFinite(result))
-      throw new Error("Invalid result");
+      throw new TypeError("Invalid result");
 
     return ok(result);
   } catch (error) {

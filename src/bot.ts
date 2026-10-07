@@ -170,8 +170,8 @@ if (import.meta.main) {
     );
 
     await Promise.all(
-      client.guilds.cache.map(async guild =>
-        limit(async () => {
+      client.guilds.cache.map(async guild => {
+        return limit(async () => {
           if (!user) return;
           const alertChannel = await safeAlertChannel(guild);
           const textDisplayComponents =
@@ -216,8 +216,8 @@ if (import.meta.main) {
             ],
             flags: "IsComponentsV2",
           });
-        }),
-      ),
+        });
+      }),
     );
   };
 
