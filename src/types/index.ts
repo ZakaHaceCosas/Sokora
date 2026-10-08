@@ -214,7 +214,8 @@ export interface FeatureError {
 export type FeatureName =
   | `games/${"rps" | "coin"}`
   | `math/${"calc" | "graph"}`
-  | `mod/${"ban" | "unban" | "mute" | "unmute" | "kick" | "lock" | "unlock" | "warn" | "slowdown" | "delwarn" | "clear"}`;
+  | `mod/${"ban" | "unban" | "mute" | "unmute" | "kick" | "lock" | "unlock" | "warn" | "slowdown" | "delwarn" | "clear"}`
+  | `news/${"edit" | "remove" | "view" | "post"}`;
 
 export interface PrimitiveFeatureSuccess<S> {
   success: true;

@@ -1,6 +1,6 @@
 import { getNews, updateNews } from "database/news";
-import { getSetting } from "database/settings";
 import {
+  ChannelType,
   ContainerBuilder,
   SlashCommandSubcommandBuilder,
   TextDisplayBuilder,
@@ -10,11 +10,10 @@ import {
 import { newsEmbed } from "embeds/newsEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { newsModal } from "utils/newsModal";
-import { replaceVariables } from "utils/replace";
-import { safeChannel, safeMember } from "utils/safeThings";
-import { sendChannelNews } from "utils/sendChannelNews";
+import {  safeMember } from "utils/safeThings";
 import { assertInteraction } from "types";
 import { buildErrorEmbed, useErrorEmbed } from "embeds/errorEmbed";
+import { edit } from "features/news/edit";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("edit")
@@ -27,26 +26,12 @@ export const data = new SlashCommandSubcommandBuilder()
   });
 
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
-  const user = interaction.user;
   assertInteraction(interaction);
-  if (!(await safeMember(interaction.guild, user.id)).permissions.has("ManageGuild")) {
-    await interaction.reply({
-      components: [
-        (
-          await buildErrorEmbed({
-            title: "You can’t execute this command.",
-            reason: "You need the **Manage Server** permission.",
-          })
-        )[0],
-      ],
-      flags: ["Ephemeral", "IsComponentsV2"],
-    });
-    return;
-  }
 
   const id = interaction.options.getNumber("id", true);
-
+  const user = await safeMember(interaction.guild, interaction.user.id);
   const guild = interaction.guild;
+  // TODO: duplicate within the feature?
   const news = await getNews(guild.id, id);
   if (!news) {
     await interaction.reply({
@@ -65,52 +50,37 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
   interaction.client.once("interactionCreate", async modalInteraction => {
     if (!modalInteraction.isModalSubmit()) return;
 
-    const title = await replaceVariables(
-      modalInteraction.fields.getTextInputValue("title"),
-      guild,
-      user,
-    );
+    const rawTitle = modalInteraction.fields.getTextInputValue("title");
+    const rawBody = modalInteraction.fields.getTextInputValue("body");
 
-    const body = await replaceVariables(
-      modalInteraction.fields.getTextInputValue("body"),
-      guild,
-      user,
-    );
+    if (
+      !interaction.channel.isTextBased() ||
+      interaction.channel.isVoiceBased() ||
+      interaction.channel.isDMBased() ||
+      interaction.channel.isThread() ||
+      interaction.channel.type == ChannelType.GuildAnnouncement
+    )
+      return;
+
+    const result = await edit({
+      userMember: user,
+      rawBody, rawTitle, guild, id, fallbackChannel: interaction.channel
+    })
+
+    if (!result.success) {
+      await interaction.reply({
+        components: [(await buildErrorEmbed({ interaction, ...result.out }))[0]],
+        flags: ["IsComponentsV2", "Ephemeral"],
+      });
+      return;
+    }
 
     const editedContainer = new ContainerBuilder()
       .addTextDisplayComponents(new TextDisplayBuilder().setContent("## News post edited."))
       .setAccentColor(await colorize({ hue: Sokolors.Green }));
-
-    if (!(await getSetting(interaction.guild.id, "news", "edit_original_message"))) {
-      await sendChannelNews(
-        interaction.guild,
-        interaction,
-        { title, body, author_id: news.author_id, id },
-        true,
-      );
-      return await modalInteraction.reply({
-        components: [editedContainer],
-        flags: ["Ephemeral", "IsComponentsV2"],
-      });
-    }
-
-    const channel = (await safeChannel(
-      interaction.guild,
-      (await getSetting(interaction.guild.id, "news", "channel")) ?? interaction.channel.id,
-    )) as TextChannel;
-
-    await Promise.all([
-      channel.messages.edit(news.message_id, {
-        components: [
-          await newsEmbed(interaction.guild, { title, body, author_id: news.author_id, id }, true),
-        ],
-        flags: "IsComponentsV2",
-      }),
-      updateNews(interaction.guild.id, id, title, body),
-      modalInteraction.reply({
-        components: [editedContainer],
-        flags: ["Ephemeral", "IsComponentsV2"],
-      }),
-    ]);
-  });
+    modalInteraction.reply({
+      components: [editedContainer],
+      flags: ["Ephemeral", "IsComponentsV2"],
+    })
+  }
 }

@@ -1,10 +1,9 @@
 import { postNews, updateNews } from "database/news";
 import { getSetting } from "database/settings";
-import type { ChatInputCommandInteraction, Guild, TextChannel } from "discord.js";
+import type { Guild, TextChannel } from "discord.js";
 import { newsEmbed } from "embeds/newsEmbed";
 import { channelCheck } from "./channelCheck";
 import { safeChannel } from "./safeThings";
-import { assertInteraction } from "types";
 
 /**
  * Sends news to a channel.
@@ -16,7 +15,7 @@ import { assertInteraction } from "types";
  */
 export async function sendChannelNews(
   guild: Guild,
-  interaction: ChatInputCommandInteraction,
+  fallbackChannel: TextChannel,
   newsOptions: {
     title: string;
     body: string;
@@ -28,12 +27,11 @@ export async function sendChannelNews(
   willEdit?: boolean,
 ): Promise<void> {
   const { title, body, author_id, id, image_url, category_id } = newsOptions;
-  assertInteraction(interaction);
 
   const category = await getSetting(guild.id, "news", "categories", category_id);
   const channel = (await safeChannel(
     guild,
-    category.channel ?? (await getSetting(guild.id, "news", "channel")) ?? interaction.channel.id,
+    category.channel ?? (await getSetting(guild.id, "news", "channel")) ?? fallbackChannel.id,
   )) as TextChannel;
 
   if (
