@@ -1,16 +1,14 @@
-import { getNews, updateNews } from "database/news";
+import { getNews } from "database/news";
 import {
   ChannelType,
   ContainerBuilder,
   SlashCommandSubcommandBuilder,
   TextDisplayBuilder,
   type ChatInputCommandInteraction,
-  type TextChannel,
 } from "discord.js";
-import { newsEmbed } from "embeds/newsEmbed";
 import { colorize, Sokolors } from "utils/colorize";
 import { newsModal } from "utils/newsModal";
-import {  safeMember } from "utils/safeThings";
+import { safeMember } from "utils/safeThings";
 import { assertInteraction } from "types";
 import { buildErrorEmbed, useErrorEmbed } from "embeds/errorEmbed";
 import { edit } from "features/news/edit";
@@ -48,12 +46,8 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
   }
 
   interaction.client.once("interactionCreate", async modalInteraction => {
-    if (!modalInteraction.isModalSubmit()) return;
-
-    const rawTitle = modalInteraction.fields.getTextInputValue("title");
-    const rawBody = modalInteraction.fields.getTextInputValue("body");
-
     if (
+      !modalInteraction.isModalSubmit() ||
       !interaction.channel.isTextBased() ||
       interaction.channel.isVoiceBased() ||
       interaction.channel.isDMBased() ||
@@ -62,10 +56,17 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     )
       return;
 
+    const rawTitle = modalInteraction.fields.getTextInputValue("title");
+    const rawBody = modalInteraction.fields.getTextInputValue("body");
+
     const result = await edit({
       userMember: user,
-      rawBody, rawTitle, guild, id, fallbackChannel: interaction.channel
-    })
+      rawBody,
+      rawTitle,
+      guild,
+      id,
+      fallbackChannel: interaction.channel,
+    });
 
     if (!result.success) {
       await interaction.reply({
@@ -78,9 +79,10 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     const editedContainer = new ContainerBuilder()
       .addTextDisplayComponents(new TextDisplayBuilder().setContent("## News post edited."))
       .setAccentColor(await colorize({ hue: Sokolors.Green }));
-    modalInteraction.reply({
+
+    await modalInteraction.reply({
       components: [editedContainer],
       flags: ["Ephemeral", "IsComponentsV2"],
-    })
-  }
+    });
+  });
 }

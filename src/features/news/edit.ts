@@ -48,7 +48,7 @@ async function method(
       { title, body, author_id: news.author_id, id },
       true,
     );
-    return ok({ok:true})
+    return ok({ ok: true });
   }
 
   const channel = (await safeChannel(
@@ -56,9 +56,11 @@ async function method(
     (await getSetting(guild.id, "news", "channel")) ?? fallbackChannel.id,
   )) as TextChannel; // TODO: change this assertion
 
+  const embed = await newsEmbed(guild, { title, body, author_id: news.author_id, id }, true);
+
   await Promise.all([
     channel.messages.edit(news.message_id, {
-      components: [await newsEmbed(guild, { title, body, author_id: news.author_id, id }, true)],
+      components: [embed],
       flags: "IsComponentsV2",
     }),
     updateNews(guild.id, id, title, body),

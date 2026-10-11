@@ -85,11 +85,11 @@ export async function getCase(
   guildID: number | string,
   id?: number,
 ): Promise<TypeOfDefinition<Case>[]> {
-  const modCase = values<TypeOfDefinition<Case>>(
-    await db`SELECT * FROM moderation WHERE "guild_id" = ${guildID} AND "id" = ${id};`,
+  return values<TypeOfDefinition<Case>>(
+    id
+      ? await db`SELECT * FROM moderation WHERE "guild_id" = ${guildID} AND "id" = ${id};`
+      : await db`SELECT * FROM moderation WHERE "guild_id" = ${guildID}`,
   );
-
-  return modCase.length > 0 ? modCase : [];
 }
 
 export async function editCase(

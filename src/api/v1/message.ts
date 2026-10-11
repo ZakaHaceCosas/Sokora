@@ -29,6 +29,7 @@ import {
   type InterkoraPayloadIssue,
   isParsedSetter,
   type interkora,
+  type ResolvedEntity,
 } from ".";
 
 function switchInnerTypes(value: string): SettingSettableValue {
@@ -370,12 +371,18 @@ export async function buildPayloadFromMessage(
     ownerId: message.guild.ownerId,
   });
 
+  // TODO: do this
+  const effectiveStack = ["@order"];
+
   if (message.content.startsWith("soko!request")) {
     await requestInterkora(isEnabled, isAllowed, entity, message);
     return {
       entity,
       gid: message.guildId,
+      effectiveStack: effectiveStack.join("\n"),
+      effectiveName: "Requested",
       // TODO : ???
+      // typing of this is broken
     };
   }
 
@@ -383,20 +390,18 @@ export async function buildPayloadFromMessage(
     return {
       entity,
       gid: message.guildId,
-      effective: {
-        effectiveName: "Disabled",
-        message: "Not enabled.",
-      },
+      effectiveName: "Disabled",
+      effectiveStack: effectiveStack.join("\n"),
+      errorMessage: "Not enabled.",
     };
 
   if (!isAllowed)
     return {
       entity,
       gid: message.guildId,
-      effective: {
-        effectiveName: "NoPermission",
-        message: `At ${mention(Date.now(), "DEFAULT_TIMESTAMP")}, unauthorized user/application ${mention(message.author.id, "USER")} attempted to run Interkora commands.`,
-      },
+      effectiveStack: effectiveStack.join("\n"),
+      effectiveName: "NoPermission",
+      errorMessage: `At ${mention(Date.now(), "DEFAULT_TIMESTAMP")}, unauthorized user/application ${mention(message.author.id, "USER")} attempted to run Interkora commands.`,
     };
 
   let queryGuildId = message.guildId;
@@ -429,7 +434,8 @@ export async function buildPayloadFromMessage(
             gid: queryGuildId,
             errorMessage: "Query operand had a GID param for whatever reason.",
             entity,
-            effective: EffectiveStatus.EEInvalidSeq | Order.Query,
+            effectiveName: "InvalidSeq",
+            effectiveStack: effectiveStack.join("\n"),
           };
 
         if (out.action.key === "reset-guild") {
@@ -444,9 +450,8 @@ export async function buildPayloadFromMessage(
               gid: queryGuildId,
               errorMessage: `Guild ${newGuildId} does not exist OR does not have Interkora enabled.`,
               entity,
-              effective: {
-                effectiveName: "InvalidSeq",
-              },
+              effectiveName: "InvalidSeq",
+              effectiveStack: effectiveStack.join("\n"),
             };
 
           queryGuildId = newGuildId;
@@ -476,7 +481,8 @@ export async function buildPayloadFromMessage(
     } catch (error) {
       if (error instanceof InterkoraError)
         return {
-          effective: error,
+          effectiveName: error.effectiveName,
+          effectiveStack: effectiveStack.join("\n"),
           gid: queryGuildId,
           entity,
           errorMessage: `Interkora error\nSeq ${index}\nErr [${error.cause}]: ${error.message}.`,
@@ -490,7 +496,8 @@ export async function buildPayloadFromMessage(
     payload.actualPayload.queries.length > 10 ||
     payload.actualPayload.imports.length > 10
     ? {
-        effective: { effectiveName: "SeqSz" },
+        effectiveName: "SeqSz",
+        effectiveStack: effectiveStack.join("\n"),
         gid: message.guildId,
         entity,
         errorMessage: `Interkora error\nSingle message sequence is too large (exceeds 10 Interkora calls of the same kind message).\nOptimize calls or split into multiple messages.`,
@@ -498,11 +505,22 @@ export async function buildPayloadFromMessage(
     : payload;
 }
 
+// this is obviously temp.
 export async function buildMessageFromPayload(
   payload: Awaited<ReturnType<typeof interkora>>,
 ): Promise<string> {
   await fetch("https://bing.com" + JSON.stringify(payload));
   return "sic seben";
+}
+
+function isEntityAllowed(argument0: {
+  whitelist: string[];
+  entity: ResolvedEntity;
+  ownerId: string;
+}): boolean {
+  console.log(argument0);
+  // TODO!!
+  return true;
 }
 
 /*

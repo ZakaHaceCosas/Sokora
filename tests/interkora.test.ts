@@ -1,31 +1,40 @@
 import { test, expect, beforeAll, describe } from "bun:test";
 import { interkora } from "api/v1/index";
-import { generateMessage } from "./utilities";
+import { setup, state } from "./utilities";
 import { setSetting } from "database/settings";
-import { DEV_GUILD_ID } from "const";
+import { TESTER_CHANNEL } from "utils/constants";
 import { buildPayloadFromMessage } from "api/v1/message";
-import { client } from "botfile";
 
 beforeAll(async () => {
-  await setSetting(DEV_GUILD_ID, "interkora", "enabled", true);
-  await setSetting(DEV_GUILD_ID, "leveling", "enabled", false);
-  await setSetting(DEV_GUILD_ID, "leveling", "xp_gain", 60);
+  await setup();
+
+  await setSetting(state.guild.id, "interkora", "enabled", true);
+  await setSetting(state.guild.id, "leveling", "enabled", false);
+  await setSetting(state.guild.id, "leveling", "xp_gain", 60);
 });
 
-async function makeMessage(t: string): ReturnType<typeof buildPayloadFromMessage> {
-  return await buildPayloadFromMessage(await generateMessage(t));
+async function makeMessage(content: string): ReturnType<typeof buildPayloadFromMessage> {
+  if (!TESTER_CHANNEL) throw new Error("No tester_channel!");
+  const channel = state.guild.channels.cache.get(TESTER_CHANNEL);
+  if (!channel?.isSendable()) throw new Error("Not sendable!");
+  const message = await channel.send({
+    content,
+  });
+  return buildPayloadFromMessage(message);
 }
 
 describe("interkora settings module", () => {
   test("interkora getters work", async () => {
+    console.error("MSG", await makeMessage("soko!get settings leveling.enabled"));
+
     const messages = await Promise.all([
       makeMessage("soko!get settings leveling.enabled"),
       makeMessage("soko!get settings interkora"),
-      await makeMessage(
+      makeMessage(
         "\n\n    soko!          get                     settings                leveling.enabled        \n\n",
       ),
     ]);
-    const out = await Promise.all(messages.map(async m => interkora(m, client)));
+    const out = await Promise.all(messages.map(async m => interkora(m, state.client)));
 
     expect(out).toEqual([
       {

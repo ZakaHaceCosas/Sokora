@@ -62,20 +62,19 @@ export const CLAUSES = [
   "get-ent",
   "get-req",
 ] as const;
-export const ERROR_CODES = ["InvalidSeq", "InvalidOrder", "SeqSz", "Disabled"] as const;
+export const ERROR_CODES = [
+  "InvalidSeq",
+  "Requested",
+  "InvalidOrder",
+  "NoPermission",
+  "SeqSz",
+  "Disabled",
+] as const;
 export type ERROR_CODE = (typeof ERROR_CODES)[number];
 
 export type CmpOperand = ">" | "<" | ">=" | "<=";
 export type PagingOperand = "-" | "+";
 export type SupportedRetrievalFormats = "json" | "yaml";
-
-// TODO: ???????????????????????
-// i need to redesign interkora json and types AGAIN
-interface InterkoraErrorJson {
-  effectiveStack: string;
-  effectiveName: ERROR_CODE;
-  message: string;
-}
 
 export class InterkoraError extends Error {
   public effectiveStack: string;
@@ -267,7 +266,8 @@ export interface InterkoraPayload extends ParsedSuccess {
   };
 }
 export interface InterkoraPayloadIssue extends ParsedSuccess {
-  effective: InterkoraErrorJson;
+  effectiveStack: string;
+  effectiveName: ERROR_CODE;
   member?: AnyPayloadMember;
   errorMessage?: string;
 }
@@ -560,12 +560,9 @@ export async function resolveEntity(
   message: SafeMessage | undefined,
   guild: Guild,
 ): Promise<ResolvedEntity | undefined> {
+  console.error(id, message?.author.id, guild.id);
   const userMember = message ? message.member : await safeMember(guild, id).catch(() => null);
-  const webhook = guild
-    ? message
-      ? await message.fetchWebhook()
-      : (await guild.fetchWebhooks()).get(id)
-    : undefined;
+  const webhook = message?.webhookId ? await message.fetchWebhook() : undefined;
 
   const member = userMember ?? webhook;
   if (!member) return;

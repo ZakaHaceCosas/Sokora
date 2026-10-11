@@ -1,6 +1,6 @@
 import { deleteNews, getNews } from "database/news";
 import { getSetting } from "database/settings";
-import { Guild, GuildMember, type TextChannel } from "discord.js";
+import type { Guild, GuildMember, TextChannel } from "discord.js";
 import type { FeatureOutput } from "types";
 import { feature, type MethodParameters } from "utils/feature";
 import { safeChannel } from "utils/safeThings";

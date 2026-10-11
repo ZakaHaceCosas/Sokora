@@ -284,7 +284,7 @@ describe("stateMachine.ts works", () => {
 
     tracker.set("count", 10);
 
-    const result = tracker.update("count", previous => (previous ?? 0) + 5);
+    const result = tracker.update("count", (previous = 0) => previous + 5);
 
     expect(result).toBe(15);
     expect(tracker.get("count")).toBe(15);
@@ -370,7 +370,7 @@ describe("stateMachine.ts works", () => {
     tracker.set("a", 1);
     tracker.set("b", 2);
 
-    tracker.update("a", value => (value ?? 0) + 10);
+    tracker.update("a", (value = 0) => value + 10);
 
     expect(tracker.get("a")).toBe(11);
     expect(tracker.get("b")).toBe(2);

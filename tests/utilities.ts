@@ -1,8 +1,19 @@
-import type { Guild, Message, OmitPartialGroupDMChannel, User } from "discord.js";
-import { DEV_GUILD_ID, OWNER } from "const";
-import { as, type SafeMessage } from "types";
-import { safeMessage } from "utils/safeThings";
+/* eslint-disable @typescript-eslint/promise-function-async */
+/* eslint-disable unicorn/no-top-level-assignment-in-function */
+import {
+  Client,
+  Partials,
+  ActivityType,
+  type Guild,
+  type User,
+  type GuildMember,
+} from "discord.js";
+import { errorType } from "utils/errorType";
+import { DEV_GUILD_ID, OWNER, TESTER_TOKEN, TESTER_USER_A, TESTER_USER_B } from "const";
+import { as } from "types";
+import { safeMember } from "utils/safeThings";
 
+// TODO: replace in favor of dual-client fetching
 export const mockGuild = as<Guild>({
   id: DEV_GUILD_ID,
   memberCount: 12 ** 2,
@@ -19,6 +30,7 @@ interface MockUserConfig {
   admin: boolean;
 }
 
+// TODO: replace in favor of dual-client fetching
 export function mockUser(_config?: MockUserConfig): User {
   const config: MockUserConfig = _config ?? {
     admin: false,
@@ -36,20 +48,77 @@ export function mockUser(_config?: MockUserConfig): User {
   });
 }
 
-export async function generateMessage(
-  content: string,
-  user?: MockUserConfig,
-): Promise<SafeMessage> {
-  return await safeMessage(
-    as<OmitPartialGroupDMChannel<Message>>({
-      content,
-      partial: false,
-      guildId: DEV_GUILD_ID,
-      guild: mockGuild,
-      author: mockUser(user),
-      reply: async (): Promise<OmitPartialGroupDMChannel<Message>> =>
-        as<Promise<OmitPartialGroupDMChannel<Message>>>({}),
-    }),
-    true,
-  );
+// cached promise and state to stop HMR from doing weirdness
+// not my idea, i searched this up
+// this should prevent HMR or re-running the tests
+// from re-logging in or re-fetching, which Discord won’t love
+// so far it works ;)
+
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+export const state: {
+  client: Client;
+  guild: Guild;
+  moderator: User;
+  target: User;
+  modMember: GuildMember;
+  tgtMember: GuildMember;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+} = {} as any;
+
+let readyPromise: Promise<void> | undefined;
+
+export function setup(): Promise<void> {
+  if (readyPromise) return readyPromise;
+
+  if (!TESTER_TOKEN) throw new Error("You need two bots for testing, not just one.");
+
+  // TODO: dry
+  const client = new Client({
+    presence: {
+      activities: [{ name: "Sokora test suite", type: ActivityType.Playing }],
+    },
+    partials: [Partials.Message, Partials.Reaction, Partials.User],
+    intents: [
+      "DirectMessages",
+      "Guilds",
+      "GuildMembers",
+      "GuildMessages",
+      "GuildModeration",
+      "GuildEmojisAndStickers",
+      "GuildBans",
+      "GuildMessageReactions",
+      "MessageContent",
+    ],
+  });
+
+  state.client = client;
+
+  readyPromise = new Promise<void>((resolve, reject) => {
+    client.once("clientReady", async () => {
+      try {
+        console.log("Slava Ukraini!");
+        console.log(`Logged in as ${client.user?.tag}`);
+
+        if (!DEV_GUILD_ID || !TESTER_USER_A || !TESTER_USER_B) {
+          throw new Error("Required environment variables are not set");
+        }
+
+        state.guild = await client.guilds.fetch(DEV_GUILD_ID);
+        state.moderator = await client.users.fetch(TESTER_USER_A);
+        state.target = await client.users.fetch(TESTER_USER_B);
+
+        state.modMember = await safeMember(state.guild, TESTER_USER_A);
+        state.tgtMember = await safeMember(state.guild, TESTER_USER_B);
+
+        console.log(`Guild ID: ${state.guild.id}`);
+        resolve();
+      } catch (error) {
+        reject(errorType(error));
+      }
+    });
+
+    client.login(TESTER_TOKEN).catch(reject);
+  });
+
+  return readyPromise;
 }

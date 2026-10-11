@@ -27,14 +27,8 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
   }
 
   interaction.client.once("interactionCreate", async modalInteraction => {
-    if (!modalInteraction.isModalSubmit()) return;
-
-    const rawTitle = modalInteraction.fields.getTextInputValue("title");
-    const rawBody = modalInteraction.fields.getTextInputValue("body");
-    const media = modalInteraction.fields.getUploadedFiles("images");
-    const category = modalInteraction.fields.getStringSelectValues("category")[0]
-
     if (
+      !modalInteraction.isModalSubmit() ||
       !interaction.channel.isTextBased() ||
       interaction.channel.isVoiceBased() ||
       interaction.channel.isDMBased() ||
@@ -43,15 +37,20 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
     )
       return;
 
+    const rawTitle = modalInteraction.fields.getTextInputValue("title");
+    const rawBody = modalInteraction.fields.getTextInputValue("body");
+    const media = modalInteraction.fields.getUploadedFiles("images");
+    const category = modalInteraction.fields.getStringSelectValues("category")[0];
+
     const result = await post({
       rawTitle,
       rawBody,
-      fallbackChannel:interaction.channel,
+      fallbackChannel: interaction.channel,
       media,
       userMember: await safeMember(interaction.guild, interaction.user.id),
       guild,
-      category
-    })
+      category,
+    });
 
     if (!result.success) {
       await interaction.reply({

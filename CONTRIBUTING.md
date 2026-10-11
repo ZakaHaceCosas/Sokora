@@ -67,7 +67,7 @@ If you prefer to run the Docker container, run `docker compose up --build --watc
 
 ## Contribution guide
 
-A few, simple guidelines onto how to contribute to Sokora.
+A few, simple guidelines onto how to contribute to Sokora. These are more than enough if you’re aiming at a single pull request helping with something specific; more determined developers might want the much more complete [developer docsite instead](https://docs.sokora.org/dev).
 
 Some things you should keep in mind at all times.
 
@@ -75,32 +75,7 @@ Some things you should keep in mind at all times.
 - Remember to commit changes to `bun.lock` file.
 - Do not repeat yourself, at all. Code duplication creates problems. Extract.
 - Document via JSDoc anything that isn’t _actually_ self-explanatory and other developers will have to touch often (like utility functions or important parts of important files).
-- Use the functions from `safeThings` instead of using `discord.js` provided methods for the following actions:
-  - Reply to an interaction (`safeReply`)
-  - Edit a message (`safeEdit`)
-  - Get members (`safeMembers`)
-  - Get a channel (`safeChannel`)
-  - Get a role (`safeRole`)
-  - Get an individual member (`safeMember`)
-  - Get a user (`safeUser`)
-  - Get a guild (`safeGuild`)
-  - Get a channel to send important bot messages to (`safeAlertChannel`)
-- If responding to a comment by someone with another comment (TODO: write this well)
-  - Team members are encouraged to reflect their discussions in comments. Future 3rd party contributors don’t have our chats, so any knowledge about specific code should be present in the codebase.
-
-Below, other things you should keep in mind when you’re carrying specific tasks.
-
-- _I’m interacting with a setting that is specifically an ITERABLE OBJECT one._
-  - If you’re defining it for the first time, add the property `$: { type: "TEXT", desc: "", val: "" }`.
-  - If you need to delete/reference a specific value, filter by `$`. It’s a GUID.
-- _I’m finding a way for all of settingsEmbed.ts to be PROPERLY typed._
-  - Choose a mansion you’d like us to buy for you.
-  - For reference, due to the guy building our type system assuming TypeScript is a better language than it actually is (see PR #91), we’ve hit some TypeScript limitations that make it very hard to convey what we’re doing to the compiler without it erroring out. This section of CONTRIBUTING.md was created because we were actually going to tolerate getting `settingsEmbed.ts` (one of the most important files of the bot!) to production with a truckload of TypeErrors. By now this has been resolved, but using bad practices and type casts everywhere. Anyone who achieves proper typing for this is an absolute hero and will probably be rewarded in some sort of way.
-- _I’m using a reusable container._
-  - If consuming an existing one, watch out for regular containers and build/use containers.
-    - Containers that only export xEmbed(), like `userEmbed`, are build functions. They take input and produce output (`ContainerBuilder`).
-    - Functions that export useXEmbed() and don’t exportbuildXEmbed(), like `useErrorEmbed`, are use functions. They take input, USE IT, and produce output of varying types (or none at all).
-    - YADA YADA TODO: write this better
+- Use the functions from `safeThings` instead of using `discord.js` provided methods whenever there’s one available.
 
 ### Coding guidelines
 
@@ -125,7 +100,7 @@ extended description]
 [tags]
 ```
 
-Please refer to [the Subete commit guidelines](./docs/subecommits.md).
+Please refer to [the Subete commit guidelines](https://docs.sokora.org/dev/subecommits).
 
 ### Change merging guildelines
 
