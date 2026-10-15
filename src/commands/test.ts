@@ -24,8 +24,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
       new EmbedBuilder()
         .setTitle("IRL test suite")
         .setDescription(
-          "## test suite executed\ncheck attachment for output\n-# running on `bun:test` " +
-            Bun.version_with_sha,
+          `# test suite executed\ncheck attachment for full output\n## overall result\n\`\`\`${output.split("-------------------------------|---------|---------|-------------------", 4)[3].trim()}\`\`\`\n-# running on \`bun:test\` ${Bun.version_with_sha}`,
         )
         .setColor((await colorize({ hue: Sokolors.Yellow })) ?? null),
     ],

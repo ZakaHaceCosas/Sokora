@@ -19,7 +19,7 @@ async function method(
   const [ok, fail, options] = parameters;
   const { target, reason, guild, moderator, isSilent } = options;
 
-  const error = await getModError("BanMembers", {
+  const error = await getModError(["BanMembers"], {
     target,
     action: "UNBAN",
     errorOptions: { allErrors: false, botError: true, banCheckError: true },

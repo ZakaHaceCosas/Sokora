@@ -14,10 +14,10 @@ import { mention } from "utils/mention";
 import { pluralOrNot } from "utils/pluralOrNot";
 import { assertInteraction } from "types";
 
-function lacksPerm(
+export function lacksPerm(
   entityPermissions: PermissionsBitField,
   desiredPermissions: PermissionsBitField,
-): string[] {
+): (keyof typeof PermissionFlagsBits)[] {
   const missing = new PermissionsBitField();
 
   for (const permission of desiredPermissions)

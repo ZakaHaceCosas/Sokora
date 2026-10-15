@@ -174,21 +174,18 @@ export enum ModErrorCode {
 export type ModError =
   | {
       code: ModErrorCode.MissingPermission;
-      permission: keyof typeof PermissionFlagsBits;
+      permissions: (keyof typeof PermissionFlagsBits)[];
     }
   | {
       code: Exclude<ModErrorCode, ModErrorCode.MissingPermission>;
     };
 
 export function isModError(error: unknown): error is ModError {
-  return error != null && typeof error == "object" && Object.hasOwn(error, "code");
+  return error != null && typeof error == "object" && Object.hasOwn(error, "code") && !Object.hasOwn(error, "url");
 }
 
-// TODO: check that this is a ModActionResult with success false
-export function isModErroryResult(
-  error: unknown,
-): error is Extract<ModActionResult, { success: false }> {
-  return error != null && typeof error == "object" && Object.hasOwn(error, "code");
+export function isModErroryResult(error: unknown): error is ModActionResult {
+  return error != null && typeof error == "object" && Object.hasOwn(error, "error") && (error as {error: unknown}).error != null;
 }
 
 export type ModActionResult = ModActionPayload & {

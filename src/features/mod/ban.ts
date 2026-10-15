@@ -32,7 +32,7 @@ async function method(
 
   const isMember = (await safeMembers(guild)).has(target.id);
 
-  const error = await getModError("BanMembers", {
+  const error = await getModError(["BanMembers"], {
     target,
     action: "BAN",
     errorOptions: {

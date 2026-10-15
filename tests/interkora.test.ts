@@ -25,8 +25,6 @@ async function makeMessage(content: string): ReturnType<typeof buildPayloadFromM
 
 describe("interkora settings module", () => {
   test("interkora getters work", async () => {
-    console.error("MSG", await makeMessage("soko!get settings leveling.enabled"));
-
     const messages = await Promise.all([
       makeMessage("soko!get settings leveling.enabled"),
       makeMessage("soko!get settings interkora"),

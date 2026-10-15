@@ -18,7 +18,7 @@ async function method(
   const [ok, fail, options] = parameters;
   const { guild, channel, moderator, reason } = options;
 
-  const error = await getModError("ManageRoles", {
+  const error = await getModError(["ManageRoles"], {
     channel,
     errorOptions: { allErrors: false, botError: true, channelError: true },
   });

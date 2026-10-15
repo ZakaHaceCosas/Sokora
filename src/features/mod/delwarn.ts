@@ -21,7 +21,7 @@ async function method(
   const [ok, fail, options] = parameters;
   const { target, warnId, guild, reason, moderator, isSilent } = options;
 
-  const error = await getModError("ModerateMembers", {
+  const error = await getModError(["ModerateMembers"], {
     target,
     // TODO: add delwarn or document that warn is used for delwarn too, either of those
     action: "WARN",

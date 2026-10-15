@@ -19,7 +19,7 @@ async function method(
   const [ok, fail, options] = parameters;
   const { reason, moderator, target, guild, isSilent } = options;
 
-  const error = await getModError("ModerateMembers", {
+  const error = await getModError(["ModerateMembers"], {
     target,
     action: "WARN",
     errorOptions: { allErrors: true, botError: false, outsideError: true },

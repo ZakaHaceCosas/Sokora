@@ -560,7 +560,6 @@ export async function resolveEntity(
   message: SafeMessage | undefined,
   guild: Guild,
 ): Promise<ResolvedEntity | undefined> {
-  console.error(id, message?.author.id, guild.id);
   const userMember = message ? message.member : await safeMember(guild, id).catch(() => null);
   const webhook = message?.webhookId ? await message.fetchWebhook() : undefined;
 

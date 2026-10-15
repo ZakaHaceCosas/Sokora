@@ -28,7 +28,10 @@ function exceptionToFeatureError(value: unknown): FeatureError {
 function modErrorToFeatureError(value: ModActionResult): FeatureError {
   const { target, action, error } = value;
 
-  if (!error) throw new Error("modErrorToFeatureError called with no error.");
+  if (!error)
+    throw new Error(
+      `modErrorToFeatureError called with no error for tgt ${value?.target?.id} and action ${value.action}`,
+    );
 
   if (Error.isError(error)) {
     return exceptionToFeatureError(error);
@@ -49,8 +52,8 @@ function modErrorToFeatureError(value: ModActionResult): FeatureError {
   if (error.code == ModErrorCode.MissingPermission)
     return {
       title: "The bot can’t execute this command.",
-      // TODO: type error
-      reason: `The bot is missing the **\`${error.permission}\`** permission. If you want to run this command, you might want to give the bot this permission.`,
+      // TODO: better format
+      reason: `The bot is missing the **\`${error.permissions.join(" | ")}\`** permission(s). If you want to run this command, you might want to give the bot this permission.`,
     };
 
   if (error.code == ModErrorCode.ChannelDoesNotExist) {

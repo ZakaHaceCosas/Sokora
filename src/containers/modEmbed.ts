@@ -4,6 +4,7 @@
 import { client as client_ } from "botfile";
 import { getCase } from "database/moderation";
 import {
+  PermissionsBitField,
   SectionBuilder,
   TextDisplayBuilder,
   ThumbnailBuilder,
@@ -16,6 +17,7 @@ import { safeMember } from "utils/safeThings";
 import { colorize, Sokolors } from "utils/colorize";
 import { logChannel } from "utils/logChannel";
 import { type ModActionPayload, type ModActionResult, type ModError, ModErrorCode } from "types";
+import { lacksPerm } from "../commands/permcheck";
 
 type ErrorOptions = Partial<ModActionPayload> & {
   errorOptions: {
@@ -44,7 +46,7 @@ type ModEmbedOptions = ModActionResult & {
  * @returns `true` if something goes wrong. `false` otherwise.
  */
 export async function getModError(
-  permission: keyof typeof PermissionFlagsBits,
+  desiredPermissionArray: (keyof typeof PermissionFlagsBits)[],
   options: ErrorOptions,
 ): Promise<ModError | undefined> {
   const { guild, moderator, previousCaseId, target, channel, action, errorOptions } = options;
@@ -67,8 +69,12 @@ export async function getModError(
   const member = await safeMember(guild, moderator.id);
   const client = await safeMember(guild, client_.user.id);
 
-  if (botError && !client.permissions.has(permission)) {
-    return { code: ModErrorCode.MissingPermission, permission };
+  const desiredPermissions = new PermissionsBitField(desiredPermissionArray);
+  if (allErrors) desiredPermissions.add("ModerateMembers");
+  const clientLacks = lacksPerm(client.permissions, desiredPermissions);
+
+  if (botError && clientLacks.length > 0) {
+    return { code: ModErrorCode.MissingPermission, permissions: clientLacks };
   }
 
   if (channelError) {
@@ -82,15 +88,17 @@ export async function getModError(
     if (!channel.permissionsFor(client).has("ViewChannel")) {
       return {
         code: ModErrorCode.MissingPermission,
-        permission: "ViewChannel",
+        permissions: ["ViewChannel"],
       };
     }
   }
 
-  if (!member.permissions.has(permission)) {
+  const memberLacks = lacksPerm(member.permissions, desiredPermissions);
+
+  if (memberLacks.length > 0) {
     return {
       code: ModErrorCode.MissingPermission,
-      permission,
+      permissions: memberLacks,
     };
   }
 

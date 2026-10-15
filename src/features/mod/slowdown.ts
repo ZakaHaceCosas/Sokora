@@ -21,7 +21,7 @@ async function method(
   const [ok, fail, options] = parameters;
   const { timeMillisec, reason, channel, guild, moderator } = options;
 
-  const error = await getModError("ManageChannels", {
+  const error = await getModError(["ManageChannels"], {
     channel,
     errorOptions: { allErrors: false, botError: true, channelError: true },
   });
