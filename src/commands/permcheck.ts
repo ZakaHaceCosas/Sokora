@@ -119,7 +119,52 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
   const userComponents: TextDisplayBuilder[] = [];
   const channelComponents: TextDisplayBuilder[] = [];
 
-  if (!user && !channel)
+  if (user || channel) {
+    if (user)
+      if (user.moderatable)
+        userComponents.push(
+          new TextDisplayBuilder().setContent(
+            `✅ • Sokora **can** moderate ${mention(user.id, "USER")}.\n-# Checked for \`GuildMember#moderatable\`.`,
+          ),
+        );
+      else if (user.id === interaction.guild.ownerId) {
+        userComponents.push(
+          new TextDisplayBuilder().setContent(
+            `🟡 • Sokora **can’t** moderate ${mention(user.id, "USER")}, but **it’s not an issue since they own the guild**.`,
+          ),
+        );
+        warningCount++;
+      } else if (user.permissions.has(PermissionFlagsBits.Administrator)) {
+        userComponents.push(
+          new TextDisplayBuilder().setContent(
+            `🟡 • Sokora **can’t** moderate ${mention(user.id, "USER")}, but **it’s not an issue since they are a guild administrator**.`,
+          ),
+        );
+        warningCount++;
+      } else {
+        const roleCheck = getRoleError(interaction.guild.members.me, user);
+        const reason = roleCheck
+          ? `**This is because they have a higher role position.**\n${mention(roleCheck.botHighest.id, "ROLE")} is Sokora’s highest role, which compared to ${mention(roleCheck.targetHighest.id, "ROLE")} (user’s highest), is ${roleCheck.issues.length} roles below`
+          : `**Weirdly, there’s no clear explanation for this error.** If you report this issue to us you’d do us a great favor`;
+        userComponents.push(
+          new TextDisplayBuilder().setContent(
+            `❌ • Sokora **can’t** moderate ${mention(user.id, "USER")}. ${reason}.`,
+          ),
+        );
+        errorCount++;
+      }
+
+    if (channel) {
+      const [component, sum] = permCheckFormat(
+        CHANNEL_PERMS,
+        "work with this channel",
+        "Needed to work with this channel.",
+        lacksPerm(interaction.guild.members.me.permissionsIn(channel.id), CHANNEL_PERMS),
+      );
+      channelComponents.push(component);
+      errorCount += sum;
+    }
+  } else {
     for (const tuple of [
       [
         CHANNEL_PERMS,
@@ -166,51 +211,6 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
         lacksPerm(interaction.guild.members.me.permissions, tuple[0]),
       );
       genericComponents.push(component);
-      errorCount += sum;
-    }
-  else {
-    if (user)
-      if (user.moderatable)
-        userComponents.push(
-          new TextDisplayBuilder().setContent(
-            `✅ • Sokora **can** moderate ${mention(user.id, "USER")}.\n-# Checked for \`GuildMember#moderatable\`.`,
-          ),
-        );
-      else if (user.id === interaction.guild.ownerId) {
-        userComponents.push(
-          new TextDisplayBuilder().setContent(
-            `🟡 • Sokora **can’t** moderate ${mention(user.id, "USER")}, but **it’s not an issue since they own the guild**.`,
-          ),
-        );
-        warningCount++;
-      } else if (user.permissions.has(PermissionFlagsBits.Administrator)) {
-        userComponents.push(
-          new TextDisplayBuilder().setContent(
-            `🟡 • Sokora **can’t** moderate ${mention(user.id, "USER")}, but **it’s not an issue since they are a guild administrator**.`,
-          ),
-        );
-        warningCount++;
-      } else {
-        const roleCheck = getRoleError(interaction.guild.members.me, user);
-        const reason = roleCheck
-          ? `**This is because they have a higher role position.**\n${mention(roleCheck.botHighest.id, "ROLE")} is Sokora’s highest role, which compared to ${mention(roleCheck.targetHighest.id, "ROLE")} (user’s highest), is ${roleCheck.issues.length} roles below`
-          : `**Weirdly, there’s no clear explanation for this error.** If you report this issue to us you’d do us a great favor`;
-        userComponents.push(
-          new TextDisplayBuilder().setContent(
-            `❌ • Sokora **can’t** moderate ${mention(user.id, "USER")}. ${reason}.`,
-          ),
-        );
-        errorCount++;
-      }
-
-    if (channel) {
-      const [component, sum] = permCheckFormat(
-        CHANNEL_PERMS,
-        "work with this channel",
-        "Needed to work with this channel.",
-        lacksPerm(interaction.guild.members.me.permissionsIn(channel.id), CHANNEL_PERMS),
-      );
-      channelComponents.push(component);
       errorCount += sum;
     }
   }

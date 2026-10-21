@@ -658,10 +658,13 @@ export async function interkora(
       errorText: "67",
     };
 
-  if (payload.actualPayload.queries.length > 10) return seqSzError();
-  if (payload.actualPayload.imports.length > 10) return seqSzError();
-  if (payload.actualPayload.getters.length > 10) return seqSzError();
-  if (payload.actualPayload.setters.length > 10) return seqSzError();
+  if (
+    payload.actualPayload.queries.length > 10 ||
+    payload.actualPayload.imports.length > 10 ||
+    payload.actualPayload.getters.length > 10 ||
+    payload.actualPayload.setters.length > 10
+  )
+    return seqSzError();
 
   const outputs = await Promise.all([
     run(payload.actualPayload.queries, client, runQuery).catch(catcher),

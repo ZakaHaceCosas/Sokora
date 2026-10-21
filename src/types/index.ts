@@ -181,11 +181,21 @@ export type ModError =
     };
 
 export function isModError(error: unknown): error is ModError {
-  return error != null && typeof error == "object" && Object.hasOwn(error, "code") && !Object.hasOwn(error, "url");
+  return (
+    error != null &&
+    typeof error == "object" &&
+    Object.hasOwn(error, "code") &&
+    !Object.hasOwn(error, "url")
+  );
 }
 
 export function isModErroryResult(error: unknown): error is ModActionResult {
-  return error != null && typeof error == "object" && Object.hasOwn(error, "error") && (error as {error: unknown}).error != null;
+  return (
+    error != null &&
+    typeof error == "object" &&
+    Object.hasOwn(error, "error") &&
+    (error as { error: unknown }).error != null
+  );
 }
 
 export type ModActionResult = ModActionPayload & {

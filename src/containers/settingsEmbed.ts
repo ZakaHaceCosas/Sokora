@@ -852,7 +852,7 @@ Simple thing, builds a container for displaying text/integer settings, which are
 async function constructModalContainer(
   settingText: string,
   valueText: string,
-  hue: number,
+  hue: Sokolors,
 ): Promise<ContainerBuilder> {
   return new ContainerBuilder()
     .addTextDisplayComponents(new TextDisplayBuilder().setContent(settingText))

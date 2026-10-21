@@ -141,15 +141,17 @@ function isTextableRegularChannel(
   c: Channel | null | undefined,
   me: GuildMember,
 ): c is NewsChannel | DMChannel | TextChannel {
-  return c
-    ? !c.isDMBased() &&
-        c.viewable &&
-        c.permissionsFor(me).has("SendMessages") &&
-        c.isTextBased() &&
-        !c.isThread() &&
-        c.isSendable() &&
-        !c.isVoiceBased()
-    : false;
+  return (
+    (c &&
+      !c.isDMBased() &&
+      c.viewable &&
+      c.permissionsFor(me).has("SendMessages") &&
+      c.isTextBased() &&
+      !c.isThread() &&
+      c.isSendable() &&
+      !c.isVoiceBased()) ??
+    false
+  );
 }
 
 /**

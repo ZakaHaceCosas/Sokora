@@ -615,9 +615,9 @@ export async function getSetting<K extends keyof TS, S extends SettingKeyFor<K>>
   );
 
   const fallback = (): SettingReturnType<K, S> => {
-    return !set || !Object.hasOwn(set, "val")
-      ? ((set.iterable ? [] : undefined) as SettingReturnType<K, S>)
-      : (set.val as SettingReturnType<K, S>);
+    return set && Object.hasOwn(set, "val")
+      ? (set.val as SettingReturnType<K, S>)
+      : ((set.iterable ? [] : undefined) as SettingReturnType<K, S>);
   };
 
   if (res.length === 0) return fallback();

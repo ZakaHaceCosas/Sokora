@@ -206,11 +206,13 @@ function loop(
           const mention = unmention(actualSubKey);
           if (!Number.isNaN(numeric)) specifier = numeric;
           else if (mention != null)
-            if (mention.type !== "USER" && mention.type !== "TIMESTAMP")
+            if (mention.type === "USER" || mention.type === "TIMESTAMP") {
+              specifier = mention;
+            } else {
               throw new InterkoraError(
                 `Specifier **${actualSubKey}** uses a mention that is of type ${mention.type} and not USER or TIMESTAMP, the ones allowed.`,
               );
-            else specifier = mention;
+            }
 
           if (actualOperand)
             if (typeof specifier === "number" || mention?.type === "USER") {
@@ -250,13 +252,8 @@ function loop(
                 `Specifier **${subKey}** uses a mention that is of type ${mention.type} and not USER, the one allowed.`,
               );
 
-          if (actualOperand) {
-            if (typeof specifier === "number")
-              throw new InterkoraError(`Provided operand **${actualOperand}** used incorrectly.`);
-
-            if (!isCmpOperand(actualOperand))
-              throw new InterkoraError(`Provided operand **${actualOperand}** used incorrectly.`);
-          }
+          if (actualOperand && (typeof specifier === "number" || !isCmpOperand(actualOperand)))
+            throw new InterkoraError(`Provided operand **${actualOperand}** used incorrectly.`);
 
           operand = actualOperand;
 

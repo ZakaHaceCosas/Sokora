@@ -107,11 +107,9 @@ export async function getServerboardEntry(
   if (invite?.show) {
     const clientMember = await safeMember(guild, client);
     if (
-      !clientMember.permissions.has("CreateInstantInvite") ||
-      !clientMember.permissions.has("ManageGuild")
-    )
-      inviteChannel = 1;
-    else {
+      clientMember.permissions.has("CreateInstantInvite") &&
+      clientMember.permissions.has("ManageGuild")
+    ) {
       const invites = await guild.invites.fetch();
       const previousInvite = invites.find(invite => invite.inviter?.id == client);
       const id =
@@ -138,6 +136,8 @@ export async function getServerboardEntry(
                 .url;
         else inviteChannel = 1;
       } else inviteChannel = 1;
+    } else {
+      inviteChannel = 1;
     }
   }
 

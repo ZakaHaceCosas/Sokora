@@ -29,12 +29,13 @@ export async function run(
   assertInteraction(interaction);
   const id = interaction.options.getNumber("id", true);
 
-  // TODO: maybe move to assertInteraction
-  // and maybe split that into other fns + rename it as it's growing in scope
-  if (!interaction.member) return;
-  // TODO: im realizing announcement channels should not be banned?
-  // idk, guess we'll figure out when doing the test suite
   if (
+    // TODO: maybe move to assertInteraction
+    // and maybe split that into other fns + rename it as it's growing in scope
+    !interaction.member ||
+    // TODO: im realizing announcement channels should not be banned?
+    // idk, guess we'll figure out when doing the test suite
+
     !interaction.channel.isTextBased() ||
     interaction.channel.isVoiceBased() ||
     interaction.channel.isDMBased() ||
