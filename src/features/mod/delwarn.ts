@@ -1,4 +1,4 @@
-import { listUserCases, removeCase } from "database/moderation";
+import { listTargetedCases, removeCase } from "database/moderation";
 import type { Guild, User } from "discord.js";
 import { errorCheck } from "utils/errorCheck";
 import type { FeatureOutput, ModActionResult } from "types";
@@ -31,7 +31,7 @@ async function method(
 
   if (error) return fail(errorToFeature(error));
 
-  const warns = await listUserCases(guild.id, target.id, "WARN");
+  const warns = await listTargetedCases(guild.id, target.id, "WARN");
   const newWarns = warns.filter(warn => warn.id != warnId);
 
   if (newWarns.length == warns.length)
@@ -43,8 +43,7 @@ async function method(
 
   return ok({
     title: `Removed a warning from ${mention(target.id, "USER")}`,
-    // dmTitle: "Your warning has been removed",
-    //    isSilent,
+    // TODO(0.4.x): dmTitle: "Your warning has been removed",
     reason,
     moderator,
     guild,

@@ -8,6 +8,7 @@ import { modEmbed } from "embeds/modEmbed";
 import { lock } from "features/mod/lock";
 import { assertInteraction } from "types";
 import { safeChannel } from "utils/safeThings";
+import { shouldModerateSilently } from "utils/silent";
 
 export const data = new SlashCommandSubcommandBuilder()
   .setName("lock")
@@ -25,6 +26,13 @@ export const data = new SlashCommandSubcommandBuilder()
         ChannelType.GuildVoice,
         ChannelType.GuildStageVoice,
       );
+  })
+  .addBooleanOption(bool => {
+    return bool
+      .setName("silent")
+      .setDescription(
+        "If true, the message saying you locked the channel won’t be visible (overrides the server setting).",
+      );
   });
 
 export async function run(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -35,8 +43,11 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
   let channel = await safeChannel(interaction.guild, interaction.channel.id);
   if (channelOption) channel = await safeChannel(interaction.guild, channelOption.id);
 
+  const isSilent = await shouldModerateSilently(interaction);
+
   const result = await lock({
     channel,
+    isSilent,
     reason,
     moderator: interaction.user,
     guild: interaction.guild,

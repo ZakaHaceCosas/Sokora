@@ -44,22 +44,16 @@ import { safeAlertChannel, safeGuild, safeMember } from "utils/safeThings";
 import type { Mention, ResolvedEntity, SafeMessage } from "types";
 import {
   getCase,
-  listUserCases,
+  listTargetedCases,
   listGuildCases,
   type ModTypeUserTimeless,
-  type ModTypeUserTimefull,
-  type ModTypeChannelTimefull,
+  type ModTypeUserTimeful,
+  type ModTypeChannelTimeful,
 } from "database/moderation";
 import { fetchServerboard, getServerboardEntry } from "database/serverboard";
 import { getGuildLeaderboard, getUserXp } from "database/leveling";
 import { getLatestNews, getNews } from "database/news";
-import {
-  addWhitelist,
-  getRequestors,
-  addRequestor,
-  remWhitelist,
-  getRegistration,
-} from "database/interkora";
+import { addWhitelist, getRequestors, addRequestor, remWhitelist } from "database/interkora";
 import { client } from "botfile";
 
 export const COMMANDS = ["set", "reset", "drop", "get", "query"] as const;
@@ -194,7 +188,7 @@ export interface ParsedModder extends Omit<ParsedSuccess, "entity"> {
             amount: number;
           }
         | {
-            specifier: ModTypeChannelTimefull;
+            specifier: ModTypeChannelTimeful;
             timeMillisec?: number;
           }
       ))
@@ -206,7 +200,7 @@ export interface ParsedModder extends Omit<ParsedSuccess, "entity"> {
             specifier: ModTypeUserTimeless;
           }
         | {
-            specifier: ModTypeUserTimefull;
+            specifier: ModTypeUserTimeful;
             timeMillisec?: number;
           }
       ))
@@ -363,7 +357,7 @@ async function runGetter(getter: ParsedGetter): Promise<[SupportedRetrievalForma
       );
     }
 
-    return Stringify(await listUserCases(guildId, getter.action.specifier.res));
+    return Stringify(await listTargetedCases(guildId, getter.action.specifier.res));
   }
 
   if (getter.action.key === "serverboard") {
@@ -443,10 +437,10 @@ export async function requestInterkora(
     ),
     new TextDisplayBuilder().setContent(
       [
-        `**Requested at**: ${mention(message.createdTimestamp, "DEFAULT_TIMESTAMP")}`,
-        `**Sent to**: ${mention(message.channelId, "CHANNEL")} (thereby guild is **${message.guild.name}**)`,
-        `**Requester is a**: ${message.author.bot ? "bot" : (message.webhookId ? "webhook" : "human")}`,
-        reason == "" ? "Reason wasn’t even provided." : `**Reason is**: ${reason}`,
+        `Requested at **${mention(message.createdTimestamp, "DEFAULT_TIMESTAMP")}**`,
+        `Sent to ${mention(message.channelId, "CHANNEL")} (thereby guild is **${message.guild.name}**)`,
+        `Requester is a **${message.author.bot ? "bot" : (message.webhookId ? "webhook" : "human")}**`,
+        reason == "" ? "Reason wasn’t even provided." : `**Reason is** ${reason}`,
       ].join("\n"),
     ),
   ];
@@ -595,12 +589,10 @@ export async function resolveEntity(
 
   if (id === guild.ownerId) permissionOrigin = PermissionOrigins.Owner;
 
-  const registration = await getRegistration(id);
-
   let permissions: EntityPermissions =
     permissionOrigin === PermissionOrigins.None
       ? PermissionGrants.Nothing
-      : (registration?.payload.requestedPermissions ?? PermissionGrants.Nothing);
+      : PermissionGrants.Nothing;
 
   if (permissionOrigin === PermissionOrigins.Owner) permissions = PermissionGrants.Everything;
   if (permissionOrigin === PermissionOrigins.Admin) permissions = PermissionGrants.WriteAll;
@@ -687,9 +679,6 @@ export function isOrderAllowed(
     return isParsedGetter(order) || isParsedSetter(order);
 
   if (isParsedGetter(order)) {
-    // TODO: review if serverboard should have a perm entry or not
-    // it is read only and its easy to gather data anyway, but ¯\_(ツ)_/¯
-    if (order.action.key === "serverboard") return true;
     if (order.action.key === "cases")
       return entity.permissions.moderation === PermissionTableValue.Disabled ? false : true;
 

@@ -91,6 +91,8 @@ async function containerHelper(
   return container;
 }
 
+const SZ_LIMIT = 1500;
+
 async function construct(
   user: User,
   avatar: string,
@@ -115,7 +117,7 @@ async function construct(
     name: cID,
     data: [
       "- User XP",
-      `${cID === "MEE6" ? "- Level rewards if present\n" : ""}-# Settings like difficulty (which dictate the amount of XP needed to levelup) can’t be imported. Levels might immediately change when chatting if you don’t manually change the difficulty (and the current one differs too much from this one, which isn’t necessarily the case).`,
+      `${cID === "MEE6" ? "- Level rewards if present\n" : ""}-# Settings like difficulty (which dictate the amount of XP needed to levelup) can’t be imported. Since other bots calculate levels differently and XP is updated upon sending a message, unless you adjust your difficulty to match your previous bot’s, levels might immediately change when chatting, either up or down; that’s normal.`,
     ].join("\n"),
   };
 
@@ -151,35 +153,36 @@ async function construct(
       break;
     }
     case "check": {
-      console.debug("A");
       const levelData = safeStringify(levels);
       const rewardsData = safeStringify(rewards);
       const checkContainer = new ContainerBuilder().addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
-          `## This is what we’ll import from ${bots.name}\n**Levels**:${
-            levelData.length <= 2048
-              ? codeBlock("yaml", levelData)
-              : "The level data is an attachment due to it being too large."
-          }${
+          [
+            `## This is what we’ll import from ${bots.name}`,
+            `**Levels**:\n${
+              levelData.length <= SZ_LIMIT
+                ? codeBlock("yaml", levelData)
+                : "The level data is an attachment due to it being too large."
+            }`,
             rewards
-              ? `\n**Rewards**:\n${
-                  rewardsData.length <= 2048
+              ? `**Rewards**:\n${
+                  rewardsData.length <= SZ_LIMIT
                     ? codeBlock("yaml", rewardsData)
                     : "The rewards are an attachment due to them being too large."
                 }`
-              : ""
-          }`,
+              : "",
+          ]
+            .join("\n")
+            .trim(),
         ),
       );
 
-      console.debug("B");
-
       const files: AttachmentBuilder[] = [];
-      if (levelData.length > 2048) {
+      if (levelData.length > SZ_LIMIT) {
         files.push(new AttachmentBuilder(Buffer.from(levelData, "utf8"), { name: "levels.yaml" }));
         checkContainer.addFileComponents(new FileBuilder().setURL("attachment://levels.yaml"));
       }
-      if (rewardsData.length > 2048) {
+      if (rewardsData.length > SZ_LIMIT) {
         files.push(
           new AttachmentBuilder(Buffer.from(rewardsData, "utf8"), { name: "rewards.yaml" }),
         );

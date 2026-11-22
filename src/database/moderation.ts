@@ -21,11 +21,11 @@ export type Case = Satisfies<
 >;
 
 export type ModTypeChannelTimeless = "UNLOCK" | "CLEAR";
-export type ModTypeChannelTimefull = "LOCK" | "SLOWDOWN";
-export type ModTypeChannel = ModTypeChannelTimefull | ModTypeChannelTimeless;
+export type ModTypeChannelTimeful = "LOCK" | "SLOWDOWN";
+export type ModTypeChannel = ModTypeChannelTimeful | ModTypeChannelTimeless;
 export type ModTypeUserTimeless = "UNMUTE" | "WARN" | "KICK" | "UNBAN";
-export type ModTypeUserTimefull = "MUTE" | "BAN";
-export type ModTypeUser = ModTypeUserTimefull | ModTypeUserTimeless;
+export type ModTypeUserTimeful = "MUTE" | "BAN";
+export type ModTypeUser = ModTypeUserTimeful | ModTypeUserTimeless;
 export type ModType = ModTypeChannel | ModTypeUser;
 
 export async function createCase(
@@ -69,10 +69,12 @@ export async function listGuildCases(
   );
 }
 
-// TODO: improve so it properly says it supports filtering by user or channel
-export async function listUserCases(
+/**
+ * Filters cases by `target_id`, i.e. a CHANNEL or USER id. Can also filter by mod type.
+ */
+export async function listTargetedCases(
   guildID: number | string,
-  userID: number | string,
+  targetId: number | string,
   modType?: ModType,
 ): Promise<TypeOfDefinition<Case>[]> {
   const typeFilter = db`AND "type" = ${modType}`;
@@ -80,7 +82,7 @@ export async function listUserCases(
     await db`
       SELECT * FROM moderation
       WHERE "guild_id" = ${guildID}
-      AND "target_id" = ${userID}
+      AND "target_id" = ${targetId}
       ${modType ? typeFilter : db``}
       ORDER BY "id" DESC;`,
   );
@@ -88,11 +90,13 @@ export async function listUserCases(
 
 export async function getCase(
   guildID: number | string,
-  id?: number,
+  filter?: number | ModType,
 ): Promise<TypeOfDefinition<Case>[]> {
   return values<TypeOfDefinition<Case>>(
-    id
-      ? await db`SELECT * FROM moderation WHERE "guild_id" = ${guildID} AND "id" = ${id};`
+    filter
+      ? (typeof filter === "number"
+        ? await db`SELECT * FROM moderation WHERE "guild_id" = ${guildID} AND "id" = ${filter};`
+        : await db`SELECT * FROM moderation WHERE "guild_id" = ${guildID} AND "type" = ${filter};`)
       : await db`SELECT * FROM moderation WHERE "guild_id" = ${guildID}`,
   );
 }

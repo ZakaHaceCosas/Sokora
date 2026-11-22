@@ -171,6 +171,8 @@ export default defineConfig(
       "unicorn/no-await-in-promise-methods": "warn",
       // warn instead of erroring because some features are forced into being async
       "@typescript-eslint/require-await": "warn",
+      "unicorn/require-spread-parentheses": "warn",
+      "unicorn/prefer-options-parameter": "warn",
     },
   },
 );

@@ -50,13 +50,16 @@ function modErrorToFeatureError(value: ModActionResult): FeatureError {
       reason: "Cannot find the moderator.",
     };
 
-  if (error.code == ModErrorCode.MissingPermission)
+  if (
+    error.code == ModErrorCode.BotMissingPermission ||
+    error.code == ModErrorCode.ModeratorMissingPermission
+  )
     return {
-      title: "The bot can’t execute this command.",
-      reason: `The bot is missing the ${dekominator(
+      title: `${error.code == ModErrorCode.BotMissingPermission ? "The bot" : "You"} can’t execute this command.`,
+      reason: `${error.code == ModErrorCode.BotMissingPermission ? "The bot is" : "You are"} missing the ${dekominator(
         error.permissions.map(s => `**\`${s}\`**`),
         true,
-      )} ${pluralOrNot("permission", error.permissions.length)}. If you want to run this command, you might want to give the bot this permission.`,
+      )} ${pluralOrNot("permission", error.permissions.length)}. If you want to run this command, you might want to update these permission.`,
     };
 
   if (error.code == ModErrorCode.ChannelDoesNotExist)

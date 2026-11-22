@@ -78,8 +78,7 @@ describe("moderation features", () => {
 
     expectSuccess(result);
 
-    // TODO: this kinda exposes how bad our DB code is…
-    const cases = (await getCase(guild.id)).filter(c => c.type === "BAN");
+    const cases = await getCase(guild.id, "BAN");
 
     expect(cases.length).toBeGreaterThan(0);
     expect(cases[0].target_id).toBe(target.id);
@@ -201,6 +200,7 @@ describe("moderation features", () => {
       reason: "Test slowdown",
       timeMillisec: TIME,
       channel,
+      isSilent: false,
     });
 
     expectSuccess(makeSlowResult);
@@ -226,6 +226,7 @@ describe("moderation features", () => {
       reason: "Test non-slowdown",
       timeMillisec: 0,
       channel,
+      isSilent: false,
     });
 
     expectSuccess(makeFastResult);

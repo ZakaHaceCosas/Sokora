@@ -1,7 +1,7 @@
 import {
   getCase,
   listGuildCases,
-  listUserCases,
+  listTargetedCases,
   type Case,
   type ModType,
 } from "database/moderation";
@@ -177,7 +177,7 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
   let cases;
 
   if (actionID) cases = await getCase(guildID, actionID);
-  else if (user) cases = await listUserCases(guildID, user.id, modType);
+  else if (user) cases = await listTargetedCases(guildID, user.id, modType);
   else cases = await listGuildCases(guildID, modType);
 
   const pages = Math.ceil(cases.length / 5);

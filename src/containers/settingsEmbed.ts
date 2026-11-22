@@ -705,13 +705,13 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
     setting,
   );
 
-  if (key === "interkora" && setting.type === "BOOL" && previousValue === false) {
+  if (previousValue === false && key === "interkora" && setting.type === "BOOL") {
     const confirmModal = new ModalBuilder()
       .setCustomId(safeCustomId(cID))
       .setTitle("•  Are you sure?")
       .addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
-          "Interkora is a system we’re building to make Sokora hackable, programmable and extensible. The idea is cool, but it’s very unfinished so it’s not stable nor expected to function properly. You can find more info at https://docs.sokora.org.",
+          "Interkora is a cool idea we’re building to let Sokora integrate with other apps; it’s unstable and not expected to work properly (yet), we made it public for testing. You can learn more at https://docs.sokora.org/interkora.",
         ),
       )
       .addLabelComponents(
@@ -744,7 +744,7 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
             await constructModalContainer(
               `**${dotCheck({ string: methods ? setting.emoji : "☑️", twoSides: true, includeString: true })}Didn’t enable it**`,
               "Interkora was not enabled. If you’re curious about what this is, you can check https://docs.sokora.org/interkora.\n\nWe’ll make an announcement when Interkora reaches a stable version ;)\n\n**If you want to test it early without having issues with Sokora, get Sokora Canary instead, a bot version made specifically for testing unstable stuff** which you can learn more about here: https://docs.sokora.org/canary",
-              Sokolors.Green,
+              Sokolors.Blue,
             ),
           ],
           flags: ["Ephemeral", "IsComponentsV2"],
@@ -760,7 +760,7 @@ async function toggleHandler<K extends keyof TS, S extends SettingKeyFor<K>>(
           await constructModalContainer(
             `**${dotCheck({ string: methods ? setting.emoji : "✅", twoSides: true, includeString: true })}Enabled Interkora**`,
             "You can start using Interkora commands right away. Keep in mind that, again, they’re not stable; we might break them with no prior notice. It’s more recommended to try unstable features with Sokora Canary instead, which you can find here: https://docs.sokora.org/canary.\n\nLearn more about what we’re building with Interkora and why here: https://docs.sokora.org/interkora.\n\n**Report to us any issue you find with it, and have fun!**",
-            Sokolors.Green,
+            Sokolors.Yellow,
           ),
         ],
         flags: ["Ephemeral", "IsComponentsV2"],

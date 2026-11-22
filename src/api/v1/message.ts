@@ -37,16 +37,29 @@ function switchInnerTypes(value: string): SettingSettableValue {
   return value.includes(",") ? kominator(value) : value;
 }
 
-/*
-level 1
-foo "bar"
-
-. level 2
-foo "bar"
-. level 3
-foo "baz"
-*/
-
+/**
+ * Parses a split string of Sokora-ish YAML.
+ *
+ * @example
+ * ```ts
+ * const sml = `
+ * level 1
+ * foo "bar"`.split("\n")
+ *
+ * parseSokoraML(sml); // { level: 1, foo: "bar" }
+ * ```
+ *
+ * @example
+ * ```ts
+ * const sml = `
+ * . level 2
+ * foo "bar"
+ * . level 3
+ * foo "baz"`.split("\n")
+ *
+ * parseSokoraML(sml); // [{ level: 2, foo: "bar" }, ...]
+ * ```
+ */
 function parseSokoraML(rows: string[]): unknown {
   const isArray = rows.length > 0 && rows[0].startsWith(".");
   const result: Record<string, SettingSettableValue> | Record<string, SettingSettableValue>[] =
@@ -189,12 +202,15 @@ async function loop(
                 `Specifier **${actualSubKey}** uses a mention that is of type ${mention.type} and not USER or TIMESTAMP, the ones allowed.`,
               );
 
-          if (actualOperand)
-            if (typeof specifier === "number" || mention?.type === "USER") {
-              if (!isPagingOperand(actualOperand))
-                throw new InterkoraError(`Provided operand **${actualOperand}** used incorrectly.`);
-            } else if (!isCmpOperand(actualOperand))
-              throw new InterkoraError(`Provided operand **${actualOperand}** used incorrectly.`);
+          if (!actualOperand) break;
+
+          const shouldPage = typeof specifier === "number" || mention?.type === "USER";
+
+          if (
+            (shouldPage && !isPagingOperand(actualOperand)) ||
+            (!shouldPage && !isCmpOperand(actualOperand))
+          )
+            throw new InterkoraError(`Provided operand **${actualOperand}** used incorrectly.`);
 
           operand = actualOperand;
 

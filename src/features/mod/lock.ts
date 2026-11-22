@@ -10,13 +10,14 @@ interface P {
   moderator: User;
   guild: Guild;
   reason: string | null;
+  isSilent: boolean;
 }
 
 async function method(
   ...parameters: MethodParameters<P, ModActionResult>
 ): Promise<FeatureOutput<ModActionResult>> {
   const [ok, fail, options] = parameters;
-  const { channel, reason, guild, moderator } = options;
+  const { channel, reason, guild, moderator, isSilent } = options;
 
   const error = await errorCheck(["ManageRoles"], {
     channel,
@@ -58,6 +59,7 @@ async function method(
     guild,
     action: "LOCK",
     target: channel,
+    isSilent,
   });
 }
 

@@ -51,14 +51,14 @@ async function setSettingPlease<K extends keyof TS, S extends SettingKeyFor<K>>(
     const previousValue = await getSetting(interaction.guild.id, key, setting);
     const def = getSettingDef(key, setting);
     const fmt = (value_: unknown): string => {
-      return def.type === "OBJECT" && def.iterable
-        ? Bun.YAML.stringify(
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            (value_ as { $: string }[]).map(({ $, ...rest }) => rest),
-            null,
-            2,
-          )
-        : Bun.YAML.stringify(value_, null, 2);
+      return Bun.YAML.stringify(
+        def.type === "OBJECT" && def.iterable
+          ? // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            (value_ as { $: string }[]).map(({ $, ...rest }) => rest)
+          : value_,
+        null,
+        2,
+      );
     };
 
     const oldString =

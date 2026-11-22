@@ -8,6 +8,7 @@ import { feature, type MethodParameters } from "utils/feature";
 interface P {
   guild: Guild;
   moderator: User;
+  isSilent: boolean;
   channel: Channel;
   reason: string | null;
 }
@@ -16,7 +17,7 @@ async function method(
   ...parameters: MethodParameters<P, ModActionResult>
 ): Promise<FeatureOutput<ModActionResult>> {
   const [ok, fail, options] = parameters;
-  const { guild, channel, moderator, reason } = options;
+  const { guild, channel, moderator, reason, isSilent } = options;
 
   const error = await errorCheck(["ManageRoles"], {
     channel,
@@ -58,6 +59,7 @@ async function method(
     caseId,
     guild,
     action: "UNLOCK",
+    isSilent,
   });
 }
 

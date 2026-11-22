@@ -10,6 +10,7 @@ import {
   type UserLevels,
 } from "@subetedesu/honlvlimport";
 import { insertObject } from "utils/insObject";
+import { safeMembers } from "utils/safeThings";
 
 type Def = Satisfies<
   TableDefinition,
@@ -146,8 +147,9 @@ export async function importLevels(
   const res: string[] = [];
 
   const difficulty = await getSetting(guild.id, "leveling", "difficulty");
+  const members = await safeMembers(guild);
 
-  for (const user of guild.members.cache) {
+  for (const user of members) {
     if (user[1].user.bot) continue;
     const imported = levels.find(lev => lev.uid == user[1].id);
     if (!imported) {

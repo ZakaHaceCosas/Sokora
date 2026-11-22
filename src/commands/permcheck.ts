@@ -78,7 +78,7 @@ function getRoleError(
 
 export const data = new SlashCommandBuilder()
   .setName("permcheck")
-  .setDescription("Shows information about Sokora.")
+  .setDescription("Helps you see if Sokora has the permissions it needs to work.")
   .setContexts(InteractionContextType.Guild)
   .addUserOption(user => {
     return user

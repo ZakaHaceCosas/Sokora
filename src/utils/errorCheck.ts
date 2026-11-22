@@ -6,8 +6,7 @@ import { safeMember } from "./safeThings";
 
 /**
  * Checks for errors in moderation commands.
- * @param permission - The permission that the command requires. If the bot doesn't have it, it errors.
- * (TODO(v0.4): might have to check for moderator perms besides bot perms)
+ * @param permission - The permission that the command requires. If the bot or the mod don't have it, it errors.
  * @param options - Error options.
  * @returns `true` if something goes wrong. `false` otherwise.
  */
@@ -50,7 +49,7 @@ export async function errorCheck(
   const clientLacks = lacksPerm(client.permissions, desiredPermissions);
 
   if (botError && clientLacks.length > 0)
-    return r({ code: ModErrorCode.MissingPermission, permissions: clientLacks });
+    return r({ code: ModErrorCode.BotMissingPermission, permissions: clientLacks });
 
   if (channelError) {
     if (!channel)
@@ -61,7 +60,7 @@ export async function errorCheck(
     if (channel.isDMBased()) return;
     if (!channel.permissionsFor(client).has("ViewChannel"))
       return r({
-        code: ModErrorCode.MissingPermission,
+        code: ModErrorCode.BotMissingPermission,
         permissions: ["ViewChannel"],
       });
   }
@@ -70,7 +69,7 @@ export async function errorCheck(
 
   if (memberLacks.length > 0)
     return r({
-      code: ModErrorCode.MissingPermission,
+      code: ModErrorCode.ModeratorMissingPermission,
       permissions: memberLacks,
     });
 

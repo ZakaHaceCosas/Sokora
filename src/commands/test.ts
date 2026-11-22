@@ -26,10 +26,15 @@ export async function run(interaction: ChatInputCommandInteraction): Promise<voi
   await interaction.editReply({
     embeds: [
       new EmbedBuilder()
-        .setTitle("IRL test suite")
+        .setTitle("Test suite executed")
         .setDescription(
-          `# test suite executed\ncheck attachment for full output\n## overall result\n${codeBlock("typescript", res)}\n-# running on \`bun:test\` ${Bun.version_with_sha}`,
+          [
+            "Check attachment for full output",
+            "## overall result",
+            codeBlock("typescript", res),
+          ].join("\n"),
         )
+        .setFooter({ text: `Running on \`bun:test\` ${Bun.version_with_sha}` })
         .setColor((await colorize({ hue: Sokolors.Yellow })) ?? null),
     ],
     files: [{ attachment: Buffer.from(output, "utf8"), name: "output.txt" }],

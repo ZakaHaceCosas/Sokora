@@ -1,7 +1,6 @@
 import { getSetting, setSetting } from "database/settings";
 import { db } from "database/index";
-import type { TableDefinition, TypeOfDefinition, Satisfies, PermissionTable } from "types";
-import { insertObject } from "utils/insObject";
+import type { TableDefinition, TypeOfDefinition, Satisfies } from "types";
 
 type RequestorsDef = Satisfies<
   TableDefinition,
@@ -17,73 +16,6 @@ type RequestorsDef = Satisfies<
 >;
 
 type R = Omit<TypeOfDefinition<RequestorsDef>, "guild_id" | "entity_type">;
-
-type RegistrationsDef = Satisfies<
-  TableDefinition,
-  {
-    name: "itk_registrations";
-    definition: {
-      entity_id: "TEXT";
-      payload: "OBJECT";
-      created_at: "TIMESTAMP";
-      updated_at: "mTIMESTAMP";
-      token_hash: "TEXT";
-      token_date: "TIMESTAMP";
-    };
-  }
->;
-
-interface RegisteredIntegration {
-  name: string;
-  description: string;
-  type: "webhook" | "bot" | "remote";
-  requestedPermissions: PermissionTable;
-}
-
-interface Registration {
-  payload: RegisteredIntegration;
-  created_at: TypeOfDefinition<RegistrationsDef>["created_at"];
-  updated_at: TypeOfDefinition<RegistrationsDef>["updated_at"];
-}
-
-export async function getRegistration(entity_id: string): Promise<Registration | undefined> {
-  const res = await db<
-    TypeOfDefinition<RegistrationsDef>[]
-  >`SELECT "payload", "created_at", "updated_at" FROM itk_registrations WHERE "entity_id" = ${entity_id};`;
-  return (res[0] ?? undefined) as unknown as Registration | undefined;
-}
-
-/**
- * Registers an integration to generate an HTTP token and a marketplace listing.
- *
- * @param entity_id - ID of the entity to register
- * @param payload - JSON payload
- * @returns The database result and the bearer token. **Show it only once.**
- */
-export async function setRegistration(
-  entity_id: string,
-  payload: RegisteredIntegration,
-): Promise<{
-  result: TypeOfDefinition<RegistrationsDef>;
-  token: string;
-}> {
-  const token = ((): string => {
-    const bytes = crypto.getRandomValues(new Uint8Array(32));
-    return `itk_${Buffer.from(bytes).toString("base64url")}`;
-  })();
-
-  const result: TypeOfDefinition<RegistrationsDef> = {
-    payload: db(payload),
-    entity_id,
-    token_date: Temporal.Now.instant(),
-    token_hash: new Bun.CryptoHasher("sha3-512").update(token).digest("base64url"),
-    created_at: Temporal.Now.instant(),
-    updated_at: undefined,
-  };
-
-  await insertObject<RegistrationsDef>("itk_registrations", result);
-  return { result, token };
-}
 
 export async function addWhitelist(
   guildId: string,

@@ -13,13 +13,14 @@ interface P {
   timeMillisec: number;
   reason: string | null;
   channel: Channel;
+  isSilent: boolean;
 }
 
 async function method(
   ...parameters: MethodParameters<P, ModActionResult>
 ): Promise<FeatureOutput<ModActionResult>> {
   const [ok, fail, options] = parameters;
-  const { timeMillisec, reason, channel, guild, moderator } = options;
+  const { timeMillisec, reason, channel, guild, moderator, isSilent } = options;
 
   const error = await errorCheck(["ManageChannels"], {
     channel,
@@ -62,6 +63,7 @@ async function method(
           milliseconds: timeMillisec,
         })
       : undefined,
+    isSilent,
   });
 }
 

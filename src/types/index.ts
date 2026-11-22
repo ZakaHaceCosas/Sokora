@@ -47,7 +47,7 @@ export function as<T>(v: any): T {
   return v as T;
 }
 
-export type SafeChatInteraction = ChatInputCommandInteraction & {
+export type SafeChatInputCommandInteraction = ChatInputCommandInteraction & {
   guild: Guild & {
     members: Guild["members"] & {
       me: GuildMember;
@@ -67,7 +67,7 @@ export type SafeChatInteraction = ChatInputCommandInteraction & {
  */
 export function assertInteraction(
   interaction: ChatInputCommandInteraction,
-): asserts interaction is SafeChatInteraction {
+): asserts interaction is SafeChatInputCommandInteraction {
   if (
     !interaction.guild ||
     !interaction.guildId ||
@@ -148,6 +148,11 @@ export type ModActionPayload = {
       isSilent: boolean;
     }
   | {
+      action: "LOCK" | "UNLOCK" | "SLOWDOWN";
+      target: Channel;
+      isSilent: boolean;
+    }
+  | {
       action: "CLEAR" | "LOCK" | "UNLOCK" | "SLOWDOWN";
       target: Channel;
     }
@@ -161,7 +166,8 @@ export const enum ModErrorCode {
   AlreadyUnbanned,
   TargetNotFound,
   NotApiModeratable,
-  MissingPermission,
+  ModeratorMissingPermission,
+  BotMissingPermission,
   RolePosSame,
   ChannelDoesNotExist,
   TargetRolePosHigher,
@@ -178,17 +184,21 @@ export function isModError(error: unknown): error is ModActionResult & { error: 
   );
 }
 
+type _ModErrorBase =
+  | Error
+  | {
+      code: ModErrorCode.ModeratorMissingPermission | ModErrorCode.BotMissingPermission;
+      permissions: (keyof typeof PermissionFlagsBits)[];
+    }
+  | {
+      code: Exclude<
+        ModErrorCode,
+        ModErrorCode.ModeratorMissingPermission | ModErrorCode.BotMissingPermission
+      >;
+    };
+
 export type ModActionResult = ModActionPayload & {
-  error:
-    | null
-    | Error
-    | {
-        code: ModErrorCode.MissingPermission;
-        permissions: (keyof typeof PermissionFlagsBits)[];
-      }
-    | {
-        code: Exclude<ModErrorCode, ModErrorCode.MissingPermission>;
-      };
+  error: null | _ModErrorBase;
   caseId: number;
   previousCaseId?: number;
   title: string;
@@ -196,15 +206,7 @@ export type ModActionResult = ModActionPayload & {
 };
 
 export type ModActionError = ModActionResult & {
-  error:
-    | Error
-    | {
-        code: ModErrorCode.MissingPermission;
-        permissions: (keyof typeof PermissionFlagsBits)[];
-      }
-    | {
-        code: Exclude<ModErrorCode, ModErrorCode.MissingPermission>;
-      };
+  error: _ModErrorBase;
 };
 
 export type ModErrorOptions = Partial<ModActionPayload> & {
@@ -280,7 +282,7 @@ export const enum PermissionTableValue {
 }
 
 export type PermissionTable = Record<
-  "settings" | "moderation" | "leaderboard" | "news" | "starboard",
+  "settings" | "moderation" | "leaderboard" | "news" | "starboard" | "serverboard",
   PermissionTableValue
 >;
 
