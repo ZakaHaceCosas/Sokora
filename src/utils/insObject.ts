@@ -1,8 +1,7 @@
 import { db } from "database/index";
 import type { TableDefinition, TypeOfDefinition } from "types";
 
-// TODO: this is to stop Bun from breaking because "who tf is Temporal.Instant?????"
-// this itself works; thing is I have to check what to do with SELECT clauses
+// NOTE: this is to stop Bun from breaking because "who tf is Temporal.Instant?????"
 export async function insertObject<T extends TableDefinition>(
   table: string,
   payload: TypeOfDefinition<T>,

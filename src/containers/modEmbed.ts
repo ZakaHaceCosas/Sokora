@@ -57,7 +57,7 @@ function produceVerb(action: ModType, hasRemovedSlowdown: boolean, isPast: boole
   return verbAction;
 }
 
-const isUser = (thing: object): thing is User => Object.hasOwn(thing, "displayAvatarURL");
+const isUser = (thing: object): thing is User => Object.hasOwn(thing, "username");
 
 /**
  * Sends a container containing information about a moderation action.

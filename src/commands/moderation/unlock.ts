@@ -31,7 +31,7 @@ export const data = new SlashCommandSubcommandBuilder()
     return bool
       .setName("silent")
       .setDescription(
-        "If true, the message saying you unlocked the channel won’t be visible (overrides the server setting).",
+        "If true, the message saying you unlocked the channel won’t be sent (overrides the server setting).",
       );
   });
 

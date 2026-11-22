@@ -76,6 +76,7 @@ async function createSubCommand(name: string): Promise<Command> {
 
   for (const subCommandFile of sortedSubFiles) {
     const subName = subCommandFile.name;
+    console.debug("Subcommand", subName);
     if (subCommandFile.isFile()) {
       const subCommand = (await import(
         pathToFileURL(path.join(commandsPath, name, subName)).toString()
@@ -118,12 +119,14 @@ async function loadCommands(): Promise<Command[]> {
       continue;
     }
     if (commandFile.isFile()) {
+      console.debug("Working with", name, "cmd");
       pushCommand(
         commands,
         (await import(pathToFileURL(path.join(commandsPath, name)).toString())) as Command,
       );
       continue;
     }
+    console.debug("Working with", name, "sub cmd");
     if (commands.map(command => command.data.name).includes(name))
       console.error(
         `Cannot create command group "${name.toLowerCase()}": a base command already exists with that name`,
@@ -144,6 +147,7 @@ export async function removeGlobalCommands(client: Client): Promise<void> {
 }
 
 export async function registerGuildCommands(client: Client): Promise<void> {
+  console.log("Trying to load commands…");
   await loadCommands();
   const guilds = client.guilds.cache;
 

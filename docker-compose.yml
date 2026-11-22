@@ -28,7 +28,7 @@ services:
       db:
         condition: service_healthy
   db:
-    image: postgres:17
+    image: docker.io/library/postgres:17
     environment:
       POSTGRES_USER: sokora
       POSTGRES_PASSWORD: 1234
