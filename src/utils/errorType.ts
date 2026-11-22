@@ -59,7 +59,7 @@ function modErrorToFeatureError(value: ModActionResult): FeatureError {
       reason: `${error.code == ModErrorCode.BotMissingPermission ? "The bot is" : "You are"} missing the ${dekominator(
         error.permissions.map(s => `**\`${s}\`**`),
         true,
-      )} ${pluralOrNot("permission", error.permissions.length)}. If you want to run this command, you might want to update these permission.`,
+      )} ${pluralOrNot("permission", error.permissions.length)}. If you want to run this command, you might want to update ${pluralOrNot("permission", error.permissions.length, "this")}.`,
     };
 
   if (error.code == ModErrorCode.ChannelDoesNotExist)

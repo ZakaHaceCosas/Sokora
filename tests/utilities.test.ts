@@ -71,6 +71,11 @@ test("pluralOrNot() works", () => {
   expect(pluralOrNot("berry", 0)).toEqual("berries");
   expect(pluralOrNot("berry", -1)).toEqual("berry");
   expect(pluralOrNot("berry", -2)).toEqual("berries");
+
+  expect(pluralOrNot("permission", 1, "this")).toEqual("this permission");
+  expect(pluralOrNot("permission", 2, "this")).toEqual("these permissions");
+  expect(pluralOrNot("permission", 1, "that")).toEqual("that permission");
+  expect(pluralOrNot("permission", 2, "that")).toEqual("those permissions");
 });
 
 describe("mention.ts works", () => {

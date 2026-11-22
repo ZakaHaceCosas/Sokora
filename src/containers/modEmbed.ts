@@ -75,16 +75,13 @@ export async function buildModEmbed(modAction: ModEmbedOptions): Promise<Contain
   const generalValues = produceGeneralValues(modAction);
   const serverAvatar = (guild.icon ? guild.iconURL() : undefined) ?? undefined;
   const avatar = target && isUser(target) ? target.displayAvatarURL() : serverAvatar;
-  let title = `${previousCaseId ? "Edited a " : ""}${previousCaseId ? verb?.toLowerCase() : verb}${previousCaseId ? " on" : ""} ${target ? (isUser(target) ? mention(target.id, "USER") : mention(target.id, "CHANNEL")) : ""}`;
+  let title = `## ${previousCaseId ? "Edited a " : ""}${previousCaseId ? verb?.toLowerCase() : verb}${previousCaseId ? " on" : ""} ${target ? (isUser(target) ? mention(target.id, "USER") : mention(target.id, "CHANNEL")) : ""}`;
 
   if (previousCaseId ?? caseId) title += `  •  #${previousCaseId ?? caseId}`;
 
   const textDisplayComponents = [
     new TextDisplayBuilder().setContent(`**${customText?.logTitle ?? title}**`),
     new TextDisplayBuilder().setContent(generalValues.join("\n")),
-    new TextDisplayBuilder().setContent(
-      `-# ${isUser(target) ? `User ID: ${target.id}` : `Channel ID: ${target.id}`} • ${mention(Date.now(), "DEFAULT_TIMESTAMP")}`,
-    ),
   ];
 
   const container = new ContainerBuilder().setAccentColor(await colorize({ hue: Sokolors.Green }));
@@ -95,6 +92,12 @@ export async function buildModEmbed(modAction: ModEmbedOptions): Promise<Contain
         .setThumbnailAccessory(new ThumbnailBuilder().setURL(avatar)),
     );
   else container.addTextDisplayComponents(textDisplayComponents);
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(
+      `-# ${isUser(target) ? `User ID: ${target.id}` : `Channel ID: ${target.id}`} • ${mention(Date.now(), "DEFAULT_TIMESTAMP")}`,
+    ),
+  );
 
   return container;
 }
