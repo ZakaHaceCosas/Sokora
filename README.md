@@ -3,10 +3,10 @@
 
 <div align="center">
 
-![Sokora’s banner](static/banner.png)
+![Sokora’s banner](static/banner.avif)
 
-[![Discord Badge](https://img.shields.io/discord/903852579837059113?color=5865F2&logo=discord&logoColor=white)](https://discord.gg/c6C25P4BuY)
-[![Invite Bot](https://img.shields.io/badge/bot-Invite%20the%20bot%20here!-blue)](https://ptb.discord.com/api/oauth2/authorize?client_id=873918300726394960&permissions=8&scope=bot%20applications.commands)
+[![Join our server](https://img.shields.io/discord/903852579837059113?color=5865F2&logo=discord&logoColor=white)](https://discord.gg/c6C25P4BuY)
+[![Invite Bot](https://img.shields.io/badge/bot-Invite%20the%20bot%20here!-blue)](https://discord.com/oauth2/authorize?client_id=873918300726394960&permissions=1374658340983&integration_type=0&scope=bot+applications.commands)
 
 </div>
 
